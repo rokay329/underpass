@@ -17,28 +17,42 @@
     <span class="hint">그림 속 반짝이는 지점을 눌러보세요</span>
   </header>
 
+  <button id="bgmToggle" class="bgm-toggle" aria-pressed="false" aria-label="배경음악 재생">
+    <span class="bgm-icon">♪</span>
+  </button>
+  <audio id="bgmAudio" src="assets/bgm.mp3" loop preload="auto"></audio>
+
   <main class="stage">
     <div class="scene" id="scene">
-      <img class="scene-img" src="assets/scene.png" alt="돌 아치 아래, 강이 내려다보이는 야영지 — 모닥불과 캠핑 침대가 있는 밤 풍경" width="941" height="1672">
+      <img class="scene-img" id="sceneImg" src="assets/scene.png" alt="돌 아치 아래, 강이 내려다보이는 야영지 — 모닥불과 캠핑 침대가 있는 밤 풍경" width="941" height="1672">
 
       <!-- fx containers: sized/positioned to match each generated GIF's crop exactly.
            JS injects a fresh <img> into these on click and removes it when the clip ends. -->
-      <div class="fx fx--fire"   id="fxFire"   style="left:53.135%; top:52.632%; width:27.63%;  height:16.148%;" aria-hidden="true"></div>
-      <div class="fx fx--bed"    id="fxBed"    style="left:46.759%; top:63.397%; width:52.604%; height:18.84%;"  aria-hidden="true"></div>
-      <div class="fx fx--night"  id="fxNight"  style="left:2.125%;  top:22.727%; width:38.789%; height:34.39%;"  aria-hidden="true"></div>
-      <div class="fx fx--puddle" id="fxPuddle" style="left:10.627%; top:74.761%; width:35.069%; height:20.933%;" aria-hidden="true"></div>
+      <div class="fx fx--fire"    id="fxFire"    style="left:53.135%; top:52.632%; width:27.63%;  height:16.148%;" aria-hidden="true"></div>
+      <div class="fx fx--bed"     id="fxBed"     style="left:46.759%; top:63.397%; width:52.604%; height:18.84%;"  aria-hidden="true"></div>
+      <div class="fx fx--night"   id="fxNight"   style="left:2.125%;  top:22.727%; width:38.789%; height:34.39%;"  aria-hidden="true"></div>
+      <div class="fx fx--puddle"  id="fxPuddle"  style="left:10.627%; top:74.761%; width:35.069%; height:20.933%;" aria-hidden="true"></div>
+      <div class="fx fx--lantern" id="fxLantern" style="left:57.917%; top:40.67%;  width:11.158%; height:8.074%;"  aria-hidden="true"></div>
+      <div class="fx fx--tarp"    id="fxTarp"    style="left:37.194%; top:43.361%; width:12.221%; height:10.766%;" aria-hidden="true"></div>
 
-      <!-- hotspots (bed painted before fire so their small overlap near the pit still favors the fire target) -->
-      <button class="hotspot hotspot--bed"    style="left:46.759%; top:63.397%; width:52.604%; height:18.84%;"  data-target="bed"    aria-label="침대">
+      <!-- hotspots (ordered so small overlaps resolve toward the more specific target:
+           tarp over night's sky area; fire over bed's near edge) -->
+      <button class="hotspot hotspot--bed"     style="left:46.759%; top:63.397%; width:52.604%; height:18.84%;"  data-target="bed"     aria-label="침대">
         <span class="hotspot-dot"></span>
       </button>
-      <button class="hotspot hotspot--night"  style="left:2.125%;  top:22.727%; width:38.789%; height:34.39%;" data-target="night"  aria-label="밤하늘">
+      <button class="hotspot hotspot--night"   style="left:2.125%;  top:22.727%; width:38.789%; height:34.39%;" data-target="night"   aria-label="밤하늘">
         <span class="hotspot-dot"></span>
       </button>
-      <button class="hotspot hotspot--fire"   style="left:53.135%; top:52.632%; width:27.63%;  height:16.148%;" data-target="fire"   aria-label="모닥불">
+      <button class="hotspot hotspot--tarp"    style="left:37.194%; top:43.361%; width:12.221%; height:10.766%;" data-target="tarp"    aria-label="천막 자락">
         <span class="hotspot-dot"></span>
       </button>
-      <button class="hotspot hotspot--puddle" style="left:10.627%; top:74.761%; width:35.069%; height:20.933%;" data-target="puddle" aria-label="물웅덩이">
+      <button class="hotspot hotspot--fire"    style="left:53.135%; top:52.632%; width:27.63%;  height:16.148%;" data-target="fire"    aria-label="모닥불">
+        <span class="hotspot-dot"></span>
+      </button>
+      <button class="hotspot hotspot--puddle"  style="left:10.627%; top:74.761%; width:35.069%; height:20.933%;" data-target="puddle"  aria-label="물웅덩이">
+        <span class="hotspot-dot"></span>
+      </button>
+      <button class="hotspot hotspot--lantern" style="left:57.917%; top:40.67%;  width:11.158%; height:8.074%;"  data-target="lantern" aria-label="랜턴">
         <span class="hotspot-dot"></span>
       </button>
     </div>
@@ -47,7 +61,7 @@
   </main>
 
   <footer class="site-footer">
-    <p>모닥불 · 침대 · 밤하늘 · 물웅덩이 — 네 곳을 모두 눌러보세요.</p>
+    <p>모닥불 · 침대 · 밤하늘 · 물웅덩이 · 랜턴 · 천막 자락 — 여섯 곳을 모두 눌러보세요.</p>
   </footer>
 
   <script src="script.js"></script>

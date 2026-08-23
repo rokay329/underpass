@@ -80,6 +80,54 @@ html, body {
 }
 
 /* ============================================================
+   BGM toggle — small fixed control, top-right corner
+   ============================================================ */
+.bgm-toggle {
+  position: fixed;
+  top: 14px;
+  right: 16px;
+  z-index: 6;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--panel-border);
+  background: rgba(10, 14, 20, 0.55);
+  backdrop-filter: blur(2px);
+  color: var(--parchment-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.bgm-toggle:hover {
+  transform: scale(1.06);
+}
+
+.bgm-toggle .bgm-icon {
+  font-size: 15px;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.bgm-toggle[aria-pressed="true"] {
+  border-color: rgba(255, 175, 110, 0.5);
+  color: var(--ember-light);
+}
+
+.bgm-toggle[aria-pressed="true"] .bgm-icon {
+  opacity: 1;
+  animation: bgm-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes bgm-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.18); }
+}
+
+/* ============================================================
    Stage / scene — the artwork always fills 100% of the device
    height (not a fixed capped size); width follows its own
    aspect ratio, so it never crops or stretches.
@@ -162,9 +210,11 @@ html, body {
 }
 
 /* stagger the breathing so the four markers don't pulse in lockstep */
-.hotspot--bed    .hotspot-dot { animation-delay: 0.6s; }
-.hotspot--night  .hotspot-dot { animation-delay: 1.3s; }
-.hotspot--puddle .hotspot-dot { animation-delay: 2.0s; }
+.hotspot--bed     .hotspot-dot { animation-delay: 0.6s; }
+.hotspot--night   .hotspot-dot { animation-delay: 1.3s; }
+.hotspot--puddle  .hotspot-dot { animation-delay: 2.0s; }
+.hotspot--lantern .hotspot-dot { animation-delay: 2.6s; }
+.hotspot--tarp    .hotspot-dot { animation-delay: 1.8s; }
 
 /* ============================================================
    FX containers — each holds one real animated GIF (injected by

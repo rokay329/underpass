@@ -21,6 +21,15 @@
     tarp:    '바람 한 줄기가 천막 자락을 스치고 지나갑니다.',
   };
 
+  const SFX_SRC = {
+    fire:    'assets/sfx/fire.wav',
+    bed:     'assets/sfx/bed.wav',
+    night:   'assets/sfx/night.wav',
+    puddle:  'assets/sfx/puddle.wav',
+    lantern: 'assets/sfx/lantern.wav',
+    tarp:    'assets/sfx/tarp.wav',
+  };
+
   let captionTimer = null;
   function showCaption(text) {
     clearTimeout(captionTimer);
@@ -61,10 +70,52 @@
     activeTimers.set(fx.el, timer);
   }
 
+  // ---------- interaction sound effects (Web Audio API — supports overlapping
+  // rapid re-clicks cleanly, unlike a single reused <audio> element) ----------
+  let audioCtx = null;
+  const sfxBuffers = new Map();   // key -> decoded AudioBuffer (or a pending Promise)
+  const SFX_VOLUME = 0.5;         // quieter than the BGM, just a light accent
+
+  function getAudioCtx() {
+    if (!audioCtx) {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      audioCtx = new Ctx();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+    return audioCtx;
+  }
+
+  async function loadSfx(key) {
+    if (sfxBuffers.has(key)) return sfxBuffers.get(key);
+    const ctx = getAudioCtx();
+    if (!ctx || !SFX_SRC[key]) return null;
+    const promise = fetch(SFX_SRC[key])
+      .then((res) => res.arrayBuffer())
+      .then((buf) => ctx.decodeAudioData(buf))
+      .catch(() => null);
+    sfxBuffers.set(key, promise);
+    return promise;
+  }
+
+  async function playSfx(key) {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const buffer = await loadSfx(key);
+    if (!buffer) return;
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    const gain = ctx.createGain();
+    gain.gain.value = SFX_VOLUME;
+    source.connect(gain).connect(ctx.destination);
+    source.start();
+  }
+
   document.querySelectorAll('.hotspot').forEach((btn) => {
     btn.addEventListener('click', () => {
       const target = btn.dataset.target;
       playFx(target);
+      playSfx(target);
       if (CAPTIONS[target]) showCaption(CAPTIONS[target]);
     });
   });

@@ -1,7 +1,7 @@
 import numpy as np
 from PIL import Image, ImageDraw
 import math, os
-from scipy.ndimage import distance_transform_edt
+from scipy.ndimage import distance_transform_edt, label as cc_label, binary_closing, binary_dilation
 
 SRC = os.path.join(os.path.dirname(__file__), '..', 'assets', 'scene.png')
 OUTDIR = os.path.join(os.path.dirname(__file__), '..', 'assets')
@@ -45,108 +45,80 @@ def save_transparent_gif(frames_rgba, path, durations):
     )
 
 
-# ================= LANTERN: pendulum swing (damped) + flame flicker =================
+# ================= LANTERN: body stays put (no swing — was disturbing the wall
+# behind it); flame goes out, gutters, then relights, in hard-cut dot steps =================
 lx0, ly0, lx1, ly1 = 545, 680, 650, 815
 Lc = arr0[ly0:ly1, lx0:lx1].copy()
 Hc, Wc, _ = Lc.shape
 Lc_lum = L0[ly0:ly1, lx0:lx1]
 
-# geometric mask: chain (thin strip) + lantern body (blob), in LOCAL crop coords
-mask = np.zeros((Hc, Wc), dtype=bool)
-chain_x0, chain_x1 = 592 - lx0, 600 - lx0
-chain_y0, chain_y1 = 685 - ly0, 745 - ly0
-mask[chain_y0:chain_y1, chain_x0:chain_x1] = True
 body_x0, body_x1 = 570 - lx0, 620 - lx0
 body_y0, body_y1 = 745 - ly0, 803 - ly0
-mask[body_y0:body_y1, body_x0:body_x1] = True
-
-idx = distance_transform_edt(mask, return_distances=False, return_indices=True)
-bg_fill = Lc[idx[0], idx[1]]
-
-pivot_row = 0  # top of crop = mount point, zero swing there
-bottom_row = body_y1
-
-flame_local_mask = np.zeros((Hc, Wc), dtype=bool)
-flame_box = (body_x0, body_y0, body_x1, body_y1)
+flame_mask = np.zeros((Hc, Wc), dtype=bool)
 sub_lum = Lc_lum[body_y0:body_y1, body_x0:body_x1]
-flame_local_mask[body_y0:body_y1, body_x0:body_x1] = sub_lum > 95
+flame_mask[body_y0:body_y1, body_x0:body_x1] = sub_lum > 95
 
-N_LANTERN = 28
-DUR_LANTERN = 100
-MAX_SWING = 5.0  # px, at the bottom of the lantern
+# discrete brightness steps (hard cuts, no smooth interpolation): dims out,
+# gutters weakly a couple of times near-dark, then relights past full and settles.
+FLICKER = [1.00, 0.68, 0.38, 0.16, 0.06, 0.03, 0.11, 0.04, 0.22,
+           0.09, 0.34, 0.62, 0.88, 1.08, 1.00]
+N_LANTERN = len(FLICKER)
+DUR_LANTERN = 150
 
 lantern_frames = []
 for k in range(N_LANTERN):
-    t = k / N_LANTERN
-    damping = math.exp(-2.6 * t)
-    swing = math.sin(2 * math.pi * 2.1 * t) * damping * MAX_SWING
-    flicker = 1.0 + 0.18 * math.sin(0.9 * k) + 0.09 * math.sin(2.3 * k + 1.0)
-
-    out_rgb = bg_fill.copy()
-    out_alpha = np.zeros((Hc, Wc), dtype=np.float32)
-
-    for y in range(Hc):
-        row_mask = mask[y]
-        if not row_mask.any():
-            continue
-        frac = max(0.0, (y - pivot_row) / max(1, (bottom_row - pivot_row)))
-        shift = int(round(swing * frac))
-        xs = np.where(row_mask)[0]
-        src_colors = Lc[y, xs].copy()
-        if flame_local_mask[y, xs].any():
-            fm = flame_local_mask[y, xs]
-            src_colors[fm] = np.clip(src_colors[fm] * flicker, 0, 255)
-        new_xs = np.clip(xs + shift, 0, Wc - 1)
-        out_rgb[y, new_xs] = src_colors
-        out_alpha[y, new_xs] = 255
-
+    out_rgb = Lc.copy()
+    out_rgb[flame_mask] = np.clip(out_rgb[flame_mask] * FLICKER[k], 0, 255)
+    out_alpha = np.where(flame_mask, 255, 0).astype(np.uint8)
+    # only the flame pixels are part of this fx layer; body/wall stay the untouched base
     rgba = np.dstack([out_rgb, out_alpha]).astype(np.uint8)
     lantern_frames.append(Image.fromarray(rgba, 'RGBA'))
 
 save_transparent_gif(lantern_frames, f'{OUTDIR}/fx-lantern.gif', [DUR_LANTERN] * N_LANTERN)
-print('lantern done', Wc, Hc, 'bbox', (lx0, ly0, lx1, ly1))
+print('lantern done', Wc, Hc, 'frames', N_LANTERN, 'bbox', (lx0, ly0, lx1, ly1))
 
 
-# ================= TARP: gust ripple through hanging cloth =================
+# ================= TARP: discrete banded gust poses (hard cuts) =================
 tx0, ty0, tx1, ty1 = 350, 725, 465, 905
 Tc = arr0[ty0:ty1, tx0:tx1].copy()
 THc, TWc, _ = Tc.shape
 T_lum = L0[ty0:ty1, tx0:tx1]
 T_R, T_B = R0[ty0:ty1, tx0:tx1], B0[ty0:ty1, tx0:tx1]
 
-# the tarp is a warm brown cloth against a cooler dark-blue/stone background;
-# it's also simply brighter than the wall gaps around it in this dim corner.
 tarp_mask = (T_lum > 9) & (T_R > T_B)
-
-# clean up: keep only reasonably sized connected structure (skip tiny noise specks)
-from scipy.ndimage import label as cc_label
 labeled, n = cc_label(tarp_mask)
 if n > 0:
     sizes = np.bincount(labeled.ravel()); sizes[0] = 0
     tarp_mask = labeled == sizes.argmax()
-
-# close small internal gaps (fold-shadow pixels that fell under threshold) so the
-# whole cloth moves as one coherent piece rather than a scatter of streaks
-from scipy.ndimage import binary_closing, binary_dilation
 tarp_mask = binary_closing(tarp_mask, structure=np.ones((5, 5)))
 tarp_mask = binary_dilation(tarp_mask, iterations=1)
 
 idxT = distance_transform_edt(tarp_mask, return_distances=False, return_indices=True)
 bg_fillT = Tc[idxT[0], idxT[1]]
 
-# anchor the ripple near the top attachment point; rows further down sway more
-top_anchor_row = 0
-bottom_row_t = THc - 1
+rows_with_mask = np.where(tarp_mask.any(axis=1))[0]
+top_row, bottom_row = rows_with_mask.min(), rows_with_mask.max()
+span = max(1, bottom_row - top_row)
 
-N_TARP = 22
-DUR_TARP = 95
-MAX_SWAY = 9.0
+# 4 bands, top (anchored) -> bottom (free edge); each band is a short, hand-stepped
+# discrete sequence (no smooth wave formula) so it reads as a few flapping poses.
+N_TARP = 10
+DUR_TARP = 240
+band_seqs = [
+    [0,  1, -1,  1,  0, -1,  1,  0, -1, 0],   # band 0 (top, near the tie point) — barely moves
+    [0,  3, -2,  3, -2,  2, -1,  1,  0, 0],   # band 1
+    [0, -4,  5, -4,  4, -3,  2, -1,  1, 0],   # band 2
+    [0,  7, -8,  6, -6,  4, -3,  2, -1, 0],   # band 3 (bottom, free edge) — biggest swing
+]
+n_bands = len(band_seqs)
+
+band_of_row = np.zeros(THc, dtype=int)
+for y in range(THc):
+    frac = (y - top_row) / span
+    band_of_row[y] = min(int(frac * n_bands), n_bands - 1)
 
 tarp_frames = []
 for k in range(N_TARP):
-    t = k / (N_TARP - 1)
-    envelope = math.sin(math.pi * t) ** 0.6  # single gust: rises then settles back to zero
-
     out_rgb = bg_fillT.copy()
     out_alpha = np.zeros((THc, TWc), dtype=np.float32)
 
@@ -154,9 +126,7 @@ for k in range(N_TARP):
         row_mask = tarp_mask[y]
         if not row_mask.any():
             continue
-        frac = (y - top_anchor_row) / max(1, (bottom_row_t - top_anchor_row))
-        wave = math.sin(frac * 7.0 - t * 10.0)
-        shift = int(round(MAX_SWAY * frac * envelope * wave))
+        shift = band_seqs[band_of_row[y]][k]
         xs = np.where(row_mask)[0]
         src_colors = Tc[y, xs]
         new_xs = np.clip(xs + shift, 0, TWc - 1)
@@ -167,7 +137,7 @@ for k in range(N_TARP):
     tarp_frames.append(Image.fromarray(rgba, 'RGBA'))
 
 save_transparent_gif(tarp_frames, f'{OUTDIR}/fx-tarp.gif', [DUR_TARP] * N_TARP)
-print('tarp done', TWc, THc, 'bbox', (tx0, ty0, tx1, ty1), 'mask px', tarp_mask.sum())
+print('tarp done', TWc, THc, 'frames', N_TARP, 'bbox', (tx0, ty0, tx1, ty1))
 
 W_img, H_img = img.size
 for name, (x0, y0, x1, y1) in [('lantern', (lx0, ly0, lx1, ly1)), ('tarp', (tx0, ty0, tx1, ty1))]:

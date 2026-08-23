@@ -8,8 +8,8 @@
     bed:     { el: document.getElementById('fxBed'),     src: 'assets/fx-bed.gif',     frames: 23, delay: 100 },
     night:   { el: document.getElementById('fxNight'),   src: 'assets/fx-star.gif',    frames: 16, delay: 80  },
     puddle:  { el: document.getElementById('fxPuddle'),  src: 'assets/fx-puddle.gif',  frames: 20, delay: 90  },
-    lantern: { el: document.getElementById('fxLantern'), src: 'assets/fx-lantern.gif', frames: 28, delay: 100 },
-    tarp:    { el: document.getElementById('fxTarp'),    src: 'assets/fx-tarp.gif',    frames: 22, delay: 95  },
+    lantern: { el: document.getElementById('fxLantern'), src: 'assets/fx-lantern.gif', frames: 15, delay: 150 },
+    tarp:    { el: document.getElementById('fxTarp'),    src: 'assets/fx-tarp.gif',    frames: 10, delay: 240 },
   };
 
   const CAPTIONS = {
@@ -17,7 +17,7 @@
     bed:     '잠시 몸을 누이고 눈을 감아봅니다.',
     night:   '별똥별 하나가 도시의 불빛 위로 스쳐 지나갑니다.',
     puddle:  '고요한 물 위로 파문이 번져갑니다.',
-    lantern: '랜턴이 흔들리며 그림자를 흔듭니다.',
+    lantern: '랜턴 불빛이 파르르 떨리다 꺼지고, 잠시 후 다시 밝아집니다.',
     tarp:    '바람 한 줄기가 천막 자락을 스치고 지나갑니다.',
   };
 

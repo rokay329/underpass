@@ -1,0 +1,214 @@
+/* ============================================================
+   Tokens
+   ============================================================ */
+:root {
+  --bg:            #05070a;
+  --panel-border:  rgba(255, 175, 110, 0.16);
+
+  --ember:         #ff7a3c;
+  --ember-strong:  #ff9d4d;
+  --ember-light:   #ffcf8a;
+
+  --twilight:      #33507e;
+  --star:          #eaf1ff;
+
+  --parchment:     #ece0c6;
+  --parchment-dim: #b9ab8c;
+
+  --moss:          #6d7c46;
+
+  --font-display: 'Silkscreen', monospace;
+  --font-story:   'EB Garamond', Georgia, serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--parchment);
+  font-family: var(--font-story);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ember-light);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   Header
+   ============================================================ */
+.site-header {
+  padding: 20px 24px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+  align-items: center;
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  color: var(--ember-light);
+  text-shadow: 0 0 12px rgba(255, 138, 61, 0.4);
+}
+
+.hint {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--parchment-dim);
+}
+
+/* ============================================================
+   Stage / scene
+   ============================================================ */
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px 8px;
+}
+
+.scene {
+  position: relative;
+  width: 100%;
+  max-width: calc(100vh * (941 / 1672) - 140px);
+  aspect-ratio: 941 / 1672;
+  box-shadow: 0 40px 120px -30px rgba(0, 0, 0, 0.85);
+  overflow: hidden;
+}
+
+.scene-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* ============================================================
+   Hotspots
+   ============================================================ */
+.hotspot {
+  position: absolute;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hotspot-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ember-light);
+  box-shadow: 0 0 8px 2px rgba(255, 207, 138, 0.7);
+  opacity: 0.55;
+  animation: dot-breathe 3.2s ease-in-out infinite;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.hotspot:hover .hotspot-dot,
+.hotspot:focus-visible .hotspot-dot {
+  opacity: 1;
+  transform: scale(1.35);
+}
+
+.hotspot:active .hotspot-dot {
+  transform: scale(0.9);
+}
+
+@keyframes dot-breathe {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.85; }
+}
+
+/* stagger the breathing so the four markers don't pulse in lockstep */
+.hotspot--bed    .hotspot-dot { animation-delay: 0.6s; }
+.hotspot--night  .hotspot-dot { animation-delay: 1.3s; }
+.hotspot--puddle .hotspot-dot { animation-delay: 2.0s; }
+
+/* ============================================================
+   FX containers — each holds one real animated GIF (injected by
+   script.js), sized to match that GIF's own crop exactly. No
+   CSS-drawn shapes here: the artwork itself is the animation.
+   ============================================================ */
+.fx {
+  position: absolute;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.fx img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.fx img.shown {
+  opacity: 1;
+}
+
+
+/* ============================================================
+   Caption
+   ============================================================ */
+.caption {
+  min-height: 1.6em;
+  margin: 18px 0 0;
+  font-family: var(--font-story);
+  font-style: italic;
+  font-size: 16px;
+  color: var(--parchment);
+  text-align: center;
+  max-width: 480px;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.caption.visible {
+  opacity: 1;
+}
+
+/* ============================================================
+   Footer
+   ============================================================ */
+.site-footer {
+  padding: 10px 20px 30px;
+  text-align: center;
+}
+
+.site-footer p {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: rgba(185, 171, 140, 0.55);
+}
+
+@media (max-width: 480px) {
+  .scene { max-width: 100%; }
+}

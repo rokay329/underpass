@@ -28,7 +28,16 @@
     puddle:  'assets/sfx/puddle.wav',
     lantern: 'assets/sfx/lantern.wav',
     tarp:    'assets/sfx/tarp.wav',
+    dog:     'assets/sfx/dog.wav',
   };
+
+  // the dog cycles through a different short reaction on every click, in order
+  const fxDogEl = document.getElementById('fxDog');
+  const DOG_VARIANTS = [
+    { src: 'assets/fx-dog-ear.gif',  frames: 8,  delay: 130, caption: '강아지 귀가 쫑긋 섭니다.',        sfx: null  },
+    { src: 'assets/fx-dog-bark.gif', frames: 11, delay: 110, caption: '강아지가 멍멍 짖습니다!',          sfx: 'dog' },
+  ];
+  let dogVariantIndex = 0;
 
   let captionTimer = null;
   function showCaption(text) {
@@ -44,30 +53,42 @@
   // so a rapid re-click restarts cleanly instead of stacking timeouts.
   const activeTimers = new WeakMap();
 
-  function playFx(key) {
-    const fx = FX[key];
-    if (!fx || !fx.el) return;
-
-    const prev = activeTimers.get(fx.el);
+  function playFxOn(el, src, frames, delay) {
+    if (!el) return;
+    const prev = activeTimers.get(el);
     if (prev) clearTimeout(prev);
-    fx.el.innerHTML = '';
+    el.innerHTML = '';
 
     const img = document.createElement('img');
     img.alt = '';
     // cache-bust so a brand-new decode starts from frame 0 every time,
     // even if the same clip was just played
-    img.src = `${fx.src}?t=${Date.now()}`;
-    fx.el.appendChild(img);
+    img.src = `${src}?t=${Date.now()}`;
+    el.appendChild(img);
     requestAnimationFrame(() => img.classList.add('shown'));
 
-    const totalMs = fx.frames * fx.delay + 150; // small buffer past the last frame
+    const totalMs = frames * delay + 150; // small buffer past the last frame
     const timer = setTimeout(() => {
       img.classList.remove('shown');
       setTimeout(() => {
-        if (fx.el.contains(img)) fx.el.removeChild(img);
+        if (el.contains(img)) el.removeChild(img);
       }, 150);
     }, totalMs);
-    activeTimers.set(fx.el, timer);
+    activeTimers.set(el, timer);
+  }
+
+  function playFx(key) {
+    const fx = FX[key];
+    if (!fx || !fx.el) return;
+    playFxOn(fx.el, fx.src, fx.frames, fx.delay);
+  }
+
+  function playDogFx() {
+    const variant = DOG_VARIANTS[dogVariantIndex];
+    dogVariantIndex = (dogVariantIndex + 1) % DOG_VARIANTS.length;
+    playFxOn(fxDogEl, variant.src, variant.frames, variant.delay);
+    if (variant.sfx) playSfx(variant.sfx);
+    return variant.caption;
   }
 
   // ---------- interaction sound effects (Web Audio API — supports overlapping
@@ -114,6 +135,13 @@
   document.querySelectorAll('.hotspot').forEach((btn) => {
     btn.addEventListener('click', () => {
       const target = btn.dataset.target;
+
+      if (target === 'dog') {
+        const dogCaption = playDogFx();
+        showCaption(dogCaption);
+        return;
+      }
+
       playFx(target);
       playSfx(target);
       if (CAPTIONS[target]) showCaption(CAPTIONS[target]);

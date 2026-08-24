@@ -157,12 +157,43 @@ def make_tarp():
     save_wav(f'{OUTDIR}/tarp.wav', out * 0.4)
 
 
+# ---------------- dog: two quick barks ----------------
+def make_bark():
+    total_dur = 1.0
+    n_total = int(SR * total_dur)
+    out = np.zeros(n_total)
+
+    def single_bark(dur=0.16):
+        n = int(SR * dur)
+        t = np.linspace(0, dur, n)
+        freq = 480 * np.exp(-t * 10) + 140
+        phase = 2 * np.pi * np.cumsum(freq) / SR
+        tone = np.sin(phase)
+        tone += 0.3 * np.sin(phase * 2)  # a little edge/bite
+        noise = filtered_noise(n, 300, 2600)
+        env = np.exp(-t * 14)
+        attack = int(SR * 0.004)
+        env[:attack] *= np.linspace(0, 1, attack)
+        return (tone * 0.55 + noise * 0.55) * env
+
+    b1 = single_bark()
+    b2 = single_bark(0.15)
+    p1 = int(SR * 0.10)
+    p2 = int(SR * 0.62)
+    out[p1:p1 + len(b1)] += b1
+    out[p2:p2 + len(b2)] += b2 * 0.92  # second bark very slightly softer
+
+    out /= np.max(np.abs(out)) + 1e-9
+    save_wav(f'{OUTDIR}/dog.wav', out * 0.45)
+
+
 make_fire()
 make_bed()
 make_night()
 make_puddle()
 make_lantern()
 make_tarp()
+make_bark()
 print('all sfx written to', OUTDIR)
 for f in sorted(os.listdir(OUTDIR)):
     print(' -', f)

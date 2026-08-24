@@ -215,6 +215,7 @@ html, body {
 .hotspot--puddle  .hotspot-dot { animation-delay: 2.0s; }
 .hotspot--lantern .hotspot-dot { animation-delay: 2.6s; }
 .hotspot--tarp    .hotspot-dot { animation-delay: 1.8s; }
+.hotspot--dog     .hotspot-dot { animation-delay: 0.9s; }
 
 /* ============================================================
    FX containers — each holds one real animated GIF (injected by

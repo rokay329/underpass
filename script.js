@@ -34,8 +34,8 @@
   // the dog cycles through a different short reaction on every click, in order
   const fxDogEl = document.getElementById('fxDog');
   const DOG_VARIANTS = [
-    { src: 'assets/fx-dog-ear.gif',  frames: 8,  delay: 130, caption: '강아지 귀가 쫑긋 섭니다.',        sfx: null  },
-    { src: 'assets/fx-dog-bark.gif', frames: 11, delay: 110, caption: '강아지가 멍멍 짖습니다!',          sfx: 'dog' },
+    { src: 'assets/fx-dog-ear.gif',  frames: 8,  delay: 130, caption: '쿤이 귀가 쫑긋 섭니다.',        sfx: null  },
+    { src: 'assets/fx-dog-bark.gif', frames: 11, delay: 110, caption: '쿤이가 멍멍 짖습니다!',          sfx: 'dog' },
   ];
   let dogVariantIndex = 0;
 

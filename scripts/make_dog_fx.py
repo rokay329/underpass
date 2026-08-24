@@ -1,6 +1,6 @@
 import numpy as np
 from PIL import Image, ImageDraw
-from scipy.ndimage import distance_transform_edt, label as cc_label, binary_dilation
+from scipy.ndimage import distance_transform_edt
 import math, os
 
 SCENE = os.path.join(os.path.dirname(__file__), '..', 'assets', 'scene.png')
@@ -12,7 +12,6 @@ arr0 = np.array(img).astype(np.float32)
 dx0, dy0, dx1, dy1 = 114, 925, 267, 1090
 Dc = arr0[dy0:dy1, dx0:dx1].copy()
 Hc, Wc, _ = Dc.shape
-L0c = 0.299 * Dc[..., 0] + 0.587 * Dc[..., 1] + 0.114 * Dc[..., 2]
 
 
 def save_transparent_gif(frames_rgba, path, durations):
@@ -47,60 +46,43 @@ def save_transparent_gif(frames_rgba, path, durations):
     )
 
 
-def fur_mask_in_box(box, thresh=16):
-    """Real fur silhouette (not a bounding rectangle) within box, via luminance
-    thresholding against the darker background, restricted to the box and to the
-    dog's own body (largest connected blob) so stray background specks don't leak in."""
+def make_rigid_vshift_gif(box, shifts):
+    """Rigid vertical shift of the WHOLE box rectangle (eyes, nose, every dark
+    detail included -- nothing gets brightness-filtered out, so nothing can be
+    mistaken for 'background' and overwritten). Returns per-frame RGBA frames
+    plus box_rgb/erased_fill for reuse (e.g. bark's mouth/burst overlay)."""
     x0, y0, x1, y1 = box
-    m = np.zeros((Hc, Wc), dtype=bool)
-    sub = L0c[y0:y1, x0:x1] > thresh
-    labeled, n = cc_label(sub)
-    if n > 0:
-        sizes = np.bincount(labeled.ravel()); sizes[0] = 0
-        sub = labeled == sizes.argmax()
-    m[y0:y1, x0:x1] = sub
-    return m
+    box_rgb = Dc[y0:y1, x0:x1].copy()
+    bw, bh = x1 - x0, y1 - y0
 
-
-def build_shift_union(true_mask, shifts, axis_row=True):
-    """OR of true_mask shifted (vertically) by every value in shifts."""
-    union = np.zeros_like(true_mask)
-    ys, xs = np.where(true_mask)
-    for s in set(shifts):
-        new_ys = ys + s
-        valid = (new_ys >= 0) & (new_ys < Hc)
-        union[new_ys[valid], xs[valid]] = True
-    return union
-
-
-def make_vertical_shift_gif(box, shifts, out_name, thresh=16, extra_paint=None):
-    """extra_paint(canvas_arr, k, shift) -> canvas_arr, optional per-frame extra
-    drawing (used for the bark's mouth-darken + sound-burst), applied only to
-    already-opaque (real fur) pixels so it can never bleed onto the background."""
-    true_mask = fur_mask_in_box(box, thresh)
-    union = build_shift_union(true_mask, shifts)
-    union_padded = binary_dilation(union, iterations=1)  # swallow the 1px anti-alias rim too
-
-    idx = distance_transform_edt(union_padded, return_distances=False, return_indices=True)
-    bg_fill = Dc[idx[0], idx[1]]
-
-    ys, xs = np.where(true_mask)
+    # inpaint the box's own footprint from its surrounding pixels, so erasing
+    # it (before repainting the shifted copy) leaves a plausible background
+    hole = np.zeros((Hc, Wc), dtype=bool)
+    hole[y0:y1, x0:x1] = True
+    idx = distance_transform_edt(hole, return_distances=False, return_indices=True)
+    erased_fill = Dc[idx[0], idx[1]]
 
     frames = []
-    for k, shift in enumerate(shifts):
-        out_rgb = bg_fill.copy()
-        out_alpha = np.where(union_padded, 255, 0).astype(np.uint8)
+    for shift in shifts:
+        canvas = Dc.copy()
+        canvas[y0:y1, x0:x1] = erased_fill[y0:y1, x0:x1]
 
-        new_ys = ys + shift
-        valid = (new_ys >= 0) & (new_ys < Hc)
-        out_rgb[new_ys[valid], xs[valid]] = Dc[ys[valid], xs[valid]]
+        new_y0, new_y1 = y0 + shift, y1 + shift
+        clip_top = max(0, -new_y0)
+        clip_bot = max(0, new_y1 - Hc)
+        src_y0, src_y1 = clip_top, bh - clip_bot
+        dst_y0, dst_y1 = max(0, new_y0), min(Hc, new_y1)
+        if dst_y1 > dst_y0:
+            canvas[dst_y0:dst_y1, x0:x1] = box_rgb[src_y0:src_y1]
 
-        arr = np.dstack([out_rgb, out_alpha]).astype(np.uint8)
-        if extra_paint is not None:
-            arr = extra_paint(arr, k, shift)
-        frames.append(Image.fromarray(arr, 'RGBA'))
+        alpha = np.zeros((Hc, Wc), dtype=np.uint8)
+        alpha[y0:y1, x0:x1] = 255          # original footprint (being erased/repainted)
+        if dst_y1 > dst_y0:
+            alpha[dst_y0:dst_y1, x0:x1] = 255  # shifted footprint (new content)
 
-    return frames, true_mask, union_padded
+        frames.append(np.dstack([canvas, alpha]).astype(np.uint8))
+
+    return frames, box_rgb, erased_fill
 
 
 # ================= EAR PERK =================
@@ -108,7 +90,8 @@ ear_box = (56, 3, 120, 44)
 EAR_SHIFTS = [0, -2, -3, -3, -2, 0, -1, 0]
 DUR_EAR = 130
 
-ear_frames, _, _ = make_vertical_shift_gif(ear_box, EAR_SHIFTS, 'fx-dog-ear.gif')
+ear_arrays, _, _ = make_rigid_vshift_gif(ear_box, EAR_SHIFTS)
+ear_frames = [Image.fromarray(a, 'RGBA') for a in ear_arrays]
 save_transparent_gif(ear_frames, f'{OUTDIR}/fx-dog-ear.gif', [DUR_EAR] * len(EAR_SHIFTS))
 print('ear perk done, frames', len(EAR_SHIFTS))
 
@@ -120,6 +103,8 @@ BOB    = [0, 2, 3, 2, 0, 0, 2, 3, 2, 0, 0]
 MOUTH  = [0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0]
 BURST  = [0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0]
 DUR_BARK = 110
+
+bark_arrays, _, _ = make_rigid_vshift_gif(head_box, BOB)
 
 nose_sample = Dc[mouth_box[1]:mouth_box[1] + 6, mouth_box[0] + 8:mouth_box[0] + 20]
 open_mouth_color = nose_sample.reshape(-1, 3).mean(axis=0) * 0.6
@@ -139,28 +124,32 @@ def draw_burst(draw, cx, cy, strength):
         x1, y1 = cx + math.cos(ang) * r1, cy + math.sin(ang) * r1 * 0.6
         draw.line([(x0, y0), (x1, y1)], fill=burst_color, width=1)
 
-def bark_extra(arr, k, bob):
+bark_frames = []
+mb_cx = (mouth_box[0] + mouth_box[2]) / 2
+mb_cy = (mouth_box[1] + mouth_box[3]) / 2
+mb_rx = (mouth_box[2] - mouth_box[0]) / 2
+mb_ry = (mouth_box[3] - mouth_box[1]) / 2
+myy, mxx = np.mgrid[mouth_box[1]:mouth_box[3], mouth_box[0]:mouth_box[2]]
+mouth_dist = np.sqrt(((mxx - mb_cx) / mb_rx) ** 2 + ((myy - mb_cy) / mb_ry) ** 2)
+mouth_weight = np.clip(1.0 - mouth_dist, 0, 1) ** 1.4  # soft falloff, 0 at box edges
+
+for k, arr in enumerate(bark_arrays):
+    bob = BOB[k]
     if MOUTH[k]:
-        # only recolor pixels that are ALREADY opaque real fur/mouth content —
-        # never force background pixels opaque, so no rectangular dim patch
         my0, my1 = mouth_box[1] + bob, mouth_box[3] + bob
         mx0, mx1 = mouth_box[0], mouth_box[2]
-        region_alpha = arr[my0:my1, mx0:mx1, 3]
-        opaque = region_alpha > 0
         sub = arr[my0:my1, mx0:mx1, :3].astype(np.float32)
-        blended = sub * 0.35 + open_mouth_color[None, None, :] * 0.65
-        new_sub = arr[my0:my1, mx0:mx1, :3].copy()
-        new_sub[opaque] = np.clip(blended[opaque], 0, 255).astype(np.uint8)
-        arr[my0:my1, mx0:mx1, :3] = new_sub
+        w = mouth_weight[..., None] * 0.75  # max blend strength at the mouth's center
+        blended = sub * (1 - w) + open_mouth_color[None, None, :] * w
+        arr[my0:my1, mx0:mx1, :3] = np.clip(blended, 0, 255).astype(np.uint8)
+        # alpha already 255 here from the rigid head shift -- no change needed
 
+    canvas = Image.fromarray(arr, 'RGBA')
     if BURST[k]:
-        canvas = Image.fromarray(arr, 'RGBA')
         draw = ImageDraw.Draw(canvas)
         draw_burst(draw, mouth_cx, mouth_cy + bob, BURST[k])
-        arr = np.array(canvas)
-    return arr
+    bark_frames.append(canvas)
 
-bark_frames, _, _ = make_vertical_shift_gif(head_box, BOB, 'fx-dog-bark.gif', extra_paint=bark_extra)
 save_transparent_gif(bark_frames, f'{OUTDIR}/fx-dog-bark.gif', [DUR_BARK] * len(BOB))
 print('bark done, frames', len(BOB))
 

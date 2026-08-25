@@ -100,6 +100,58 @@ band_walks = np.array(band_walks)  # (n_bands, K)
 MAX_GROW = 13.0
 MIN_GROW = -3.0  # allow brief dips below resting height too, not just growth
 
+# ---- rising embers/sparks: small glowing particles that pop off the flame tip
+# and drift upward, fading out. Several overlap in time for a lively, "sparks
+# flying" look across the whole clip rather than one-at-a-time. ----
+tip_y_est = int(np.mean(top0[valid_cols]))
+flame_cx = (flame_left + flame_right) / 2
+flame_span = max(flame_right - flame_left, 1)
+
+EMBER_BRIGHT = np.array([255, 205, 90], dtype=np.float32)
+EMBER_MID = np.array([255, 120, 40], dtype=np.float32)
+EMBER_DIM = np.array([120, 40, 15], dtype=np.float32)
+
+erng = np.random.default_rng(9)
+N_EMBERS = 38
+ember_specs = []
+for i in range(N_EMBERS):
+    size_roll = erng.random()
+    size = 1 if size_roll < 0.55 else (2 if size_roll < 0.9 else 3)
+    ember_specs.append(dict(
+        start=int(erng.uniform(0, K - 8)),
+        life=int(erng.uniform(9, 18)),
+        x0=flame_cx + erng.uniform(-flame_span * 0.44, flame_span * 0.44),
+        y0=tip_y_est + erng.uniform(-8, 10),
+        dx=erng.uniform(-22, 22),
+        dy=erng.uniform(-75, -35),
+        wobble_amp=erng.uniform(3, 9),
+        wobble_freq=erng.uniform(0.35, 0.85),
+        wobble_phase=erng.uniform(0, 2 * math.pi),
+        size=size,
+    ))
+
+def draw_embers(canvas_rgb, canvas_alpha, k):
+    for spec in ember_specs:
+        local_k = k - spec['start']
+        if not (0 <= local_k < spec['life']):
+            continue
+        t = local_k / (spec['life'] - 1)
+        if t > 0.88:
+            continue  # snap out instead of trailing off to an invisible fraction
+        px = spec['x0'] + spec['dx'] * t + spec['wobble_amp'] * math.sin(spec['wobble_freq'] * local_k + spec['wobble_phase'])
+        py = spec['y0'] + spec['dy'] * t
+        if t < 0.45:
+            color = EMBER_BRIGHT + (EMBER_MID - EMBER_BRIGHT) * (t / 0.45)
+        else:
+            color = EMBER_MID + (EMBER_DIM - EMBER_MID) * ((t - 0.45) / 0.55)
+        s = spec['size']
+        xi, yi = int(round(px)), int(round(py))
+        x0c, x1c = max(0, xi - (s - 1)), min(Wc, xi + s)
+        y0c, y1c = max(0, yi - (s - 1)), min(Hc, yi + s)
+        if x1c > x0c and y1c > y0c:
+            canvas_rgb[y0c:y1c, x0c:x1c] = color
+            canvas_alpha[y0c:y1c, x0c:x1c] = 255
+
 fire_frames = []
 for k in range(K):
     # multi-harmonic brightness flicker across the whole clip (not one hump)
@@ -125,6 +177,7 @@ for k in range(K):
         out_alpha[t0:b0 + 1, x] = 0
         out_rgb[new_top:new_top + new_h, x, :] = new_seg
         out_alpha[new_top:new_top + new_h, x] = 255
+    draw_embers(out_rgb, out_alpha, k)
     rgba = np.dstack([out_rgb, out_alpha]).astype(np.uint8)
     fire_frames.append(Image.fromarray(rgba, 'RGBA'))
 

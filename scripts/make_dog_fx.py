@@ -85,15 +85,66 @@ def make_rigid_vshift_gif(box, shifts):
     return frames, box_rgb, erased_fill
 
 
-# ================= EAR PERK =================
+# ================= EAR PERK (+ three floating hearts, zzz-style) =================
 ear_box = (56, 3, 120, 44)
-EAR_SHIFTS = [0, -2, -3, -3, -2, 0, -1, 0]
-DUR_EAR = 130
+EAR_SHIFTS = [0, -2, -3, -3, -2, 0, -1, 0] + [0] * 16  # perk quickly, then hold while hearts rise
+DUR_EAR = 110
 
 ear_arrays, _, _ = make_rigid_vshift_gif(ear_box, EAR_SHIFTS)
-ear_frames = [Image.fromarray(a, 'RGBA') for a in ear_arrays]
+
+def draw_pixel_heart(scale, color):
+    """Small blocky pixel-art heart, same technique as the bed's 'z' glyphs."""
+    bitmap = [
+        "0110110",
+        "1111111",
+        "1111111",
+        "0111110",
+        "0011100",
+        "0001000",
+    ]
+    gw, gh = 7, 6
+    glyph = Image.new('RGBA', (gw, gh), (0, 0, 0, 0))
+    for yy, row in enumerate(bitmap):
+        for xx, ch in enumerate(row):
+            if ch == '1':
+                glyph.putpixel((xx, yy), color)
+    return glyph.resize((gw * scale, gh * scale), Image.NEAREST)
+
+def lerp_color(c1, c2, t):
+    return tuple(int(round(c1[i] + (c2[i] - c1[i]) * t)) for i in range(3))
+
+HEART_BRIGHT = (255, 120, 150)
+HEART_DIM = (150, 55, 80)
+# ears sit right at the top of this crop (ear_box top = y3, only ~3px of wall
+# above them before the crop's hard edge), and above that is open archway/river
+# scenery -- not wall -- so the crop can't just be extended upward. Instead,
+# spawn the hearts lower (around ear-height, not above the ear tips) and keep
+# the rise short enough that even the tallest one never reaches y=0.
+heart_specs = [
+    dict(start=1,  life=13, scale=2, dx=-8,  dy=-13, x0=74,  y0=23),
+    dict(start=6,  life=13, scale=3, dx=2,   dy=-15, x0=87,  y0=21),
+    dict(start=11, life=13, scale=2, dx=9,   dy=-13, x0=100, y0=23),
+]
+
+ear_frames = []
+for k, arr in enumerate(ear_arrays):
+    canvas = Image.fromarray(arr, 'RGBA')
+    for spec in heart_specs:
+        local_k = k - spec['start']
+        if 0 <= local_k < spec['life']:
+            t = local_k / (spec['life'] - 1)
+            if t > 0.85:  # vanish while still comfortably inside the crop
+                continue
+            fade_t = min(t / 0.65, 1.0)
+            color = lerp_color(HEART_BRIGHT, HEART_DIM, fade_t) + (255,)
+            glyph = draw_pixel_heart(spec['scale'], color)
+            px = int(round(spec['x0'] + spec['dx'] * t))
+            py = int(round(spec['y0'] + spec['dy'] * t))
+            canvas.alpha_composite(glyph, (px, py))
+    ear_frames.append(canvas)
+
 save_transparent_gif(ear_frames, f'{OUTDIR}/fx-dog-ear.gif', [DUR_EAR] * len(EAR_SHIFTS))
-print('ear perk done, frames', len(EAR_SHIFTS))
+print('ear perk + hearts done, frames', len(EAR_SHIFTS))
 
 
 # ================= BARK (head bob + mouth open + sound-burst marks) =================

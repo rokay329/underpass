@@ -129,7 +129,8 @@
   // ---------- interaction sound effects (Web Audio API — supports overlapping
   // rapid re-clicks cleanly, unlike a single reused <audio> element) ----------
   let audioCtx = null;
-  const sfxBuffers = new Map();   // key -> decoded AudioBuffer (or a pending Promise)
+  const sfxBuffers = new Map();   // key -> in-flight/resolved decode Promise (dedup only)
+  const sfxReady = new Map();     // key -> already-decoded AudioBuffer, ready to play instantly
   const SFX_VOLUME = 0.5;         // quieter than the BGM, just a light accent
 
   function getAudioCtx() {
@@ -149,22 +150,51 @@
     const promise = fetch(SFX_SRC[key])
       .then((res) => res.arrayBuffer())
       .then((buf) => ctx.decodeAudioData(buf))
+      .then((buffer) => {
+        sfxReady.set(key, buffer);
+        return buffer;
+      })
       .catch(() => null);
     sfxBuffers.set(key, promise);
     return promise;
   }
 
-  async function playSfx(key) {
-    const ctx = getAudioCtx();
-    if (!ctx) return;
-    const buffer = await loadSfx(key);
-    if (!buffer) return;
+  // Kick off fetch+decode for every sound as soon as the page loads (this
+  // needs no user gesture — only *playback* is gated). By the time the
+  // viewer actually taps anything, the buffers are already sitting in
+  // `sfxReady`, so playSfx() below can start them synchronously instead of
+  // going through an `await`. That matters: strict mobile browsers (iOS
+  // Safari in particular) only "unlock" audio when a source is started
+  // synchronously inside the gesture's own call stack — an `await` in
+  // between (e.g. waiting on a network fetch) breaks that link, which is
+  // exactly why the entry chime used to stay silent until some *later*
+  // interaction finally landed inside an already-unlocked context.
+  Object.keys(SFX_SRC).forEach((key) => { loadSfx(key); });
+
+  function startBuffer(ctx, buffer) {
     const source = ctx.createBufferSource();
     source.buffer = buffer;
     const gain = ctx.createGain();
     gain.gain.value = SFX_VOLUME;
     source.connect(gain).connect(ctx.destination);
     source.start();
+  }
+
+  function playSfx(key) {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const ready = sfxReady.get(key);
+    if (ready) {
+      // fast path: no awaiting, so this stays inside the caller's gesture
+      startBuffer(ctx, ready);
+      return;
+    }
+    // slow path (buffer not decoded yet, e.g. a very fast first click) —
+    // best effort; may be silently blocked on the strictest browsers, but
+    // should rarely be hit since decoding starts on page load
+    loadSfx(key).then((buffer) => {
+      if (buffer) startBuffer(ctx, buffer);
+    });
   }
 
   document.querySelectorAll('.hotspot').forEach((btn) => {

@@ -433,15 +433,10 @@ html, body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* touch-target hint dots are hidden -- the scene reads better without
+   visible markers pointing at every interactive spot */
 .hotspot-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--ember-light);
-  box-shadow: 0 0 8px 2px rgba(255, 207, 138, 0.7);
-  opacity: 0.55;
-  animation: dot-breathe 3.2s ease-in-out infinite;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  display: none;
 }
 
 .hotspot:hover .hotspot-dot,
@@ -498,6 +493,19 @@ html, body {
    set their own inline transform per star, which overrides this */
 .fx--night img {
   transform: translate(3%, -6%);
+}
+
+/* the dog reaction clips (ears-perk, bark) only redraw a small patch of
+   fur -- ears, forehead, sometimes the chest -- rather than the whole
+   crop, and that patch's hard alpha edge doesn't quite match the softer
+   silhouette of the resting dog underneath, which can read as a slight
+   dent right at the boundary. A wide, mostly-opaque radial fade keeps
+   the actual artwork (ears/heart/mouth, which stay well inside this
+   zone) untouched while feathering the outer edge of the overlay so it
+   blends into the base art instead of ending in a hard rectangle. */
+.fx--dog img {
+  mask-image: radial-gradient(ellipse 62% 68% at 56% 30%, #000 65%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 62% 68% at 56% 30%, #000 65%, transparent 100%);
 }
 
 

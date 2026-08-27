@@ -12,6 +12,10 @@
 </head>
 <body>
 
+  <div class="intro-veil" id="introVeil" aria-hidden="true">
+    <p class="intro-veil-text">굴따 진입 중&hellip;</p>
+  </div>
+
   <button id="bgmToggle" class="bgm-toggle" aria-pressed="false" aria-label="배경음악 재생">
     <span class="bgm-icon">♪</span>
   </button>
@@ -20,6 +24,7 @@
   <main class="stage">
     <div class="scene" id="scene">
       <img class="scene-img" id="sceneImg" src="assets/scene.png" alt="돌 아치 아래, 강이 내려다보이는 야영지 — 모닥불과 캠핑 침대, 그 옆에 앉아있는 강아지 쿤이가 있는 밤 풍경" width="941" height="1672">
+      <div class="ambient-flicker" aria-hidden="true"></div>
 
       <!-- fx containers: sized/positioned to match each generated GIF's crop exactly.
            JS injects a fresh <img> into these on click and removes it when the clip ends. -->

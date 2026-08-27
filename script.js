@@ -1,6 +1,17 @@
 (() => {
   'use strict';
 
+  // ---------- intro veil: remove the black entry overlay from the DOM
+  // once its fade-out animation finishes (also covers the
+  // prefers-reduced-motion case, where the animation just completes
+  // almost instantly instead of being skipped) ----------
+  const introVeil = document.getElementById('introVeil');
+  if (introVeil) {
+    introVeil.addEventListener('animationend', () => introVeil.remove());
+    // fallback in case the animationend event doesn't fire for some reason
+    setTimeout(() => introVeil.remove(), 6600);
+  }
+
   const caption = document.getElementById('caption');
 
   const FX = {
@@ -29,6 +40,7 @@
     lantern: 'assets/sfx/lantern.wav',
     tarp:    'assets/sfx/tarp.wav',
     dog:     'assets/sfx/dog.wav',
+    intro:   'assets/sfx/intro.wav',
   };
 
   // the dog cycles through a different short reaction on every click, in order
@@ -169,4 +181,28 @@
       }
     });
   }
+
+  // ---------- entry sound: a short, low, relaxed chime meant to land
+  // right as the space opens up. Browsers only allow audio once the user
+  // has interacted with the page, so this tries immediately (works in
+  // some browsers/contexts) and otherwise fires on the very first
+  // interaction — either way it plays exactly once, as early as possible.
+  // (Placed here, after audioCtx/getAudioCtx/playSfx are all defined and
+  // initialized above, so calling it can never throw and break the rest
+  // of this script's setup — e.g. the hotspot click/touch listeners.)
+  let introSfxPlayed = false;
+  function tryPlayIntroSfx() {
+    if (introSfxPlayed) return;
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    ctx.resume().then(() => {
+      if (introSfxPlayed) return;
+      introSfxPlayed = true;
+      playSfx('intro');
+    }).catch(() => {});
+  }
+  tryPlayIntroSfx();
+  ['pointerdown', 'keydown', 'touchstart'].forEach((evt) => {
+    document.addEventListener(evt, tryPlayIntroSfx, { once: true, passive: true });
+  });
 })();

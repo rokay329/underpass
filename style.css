@@ -32,6 +32,58 @@
 
 * { box-sizing: border-box; }
 
+/* ============================================================
+   Intro veil — a pitch-black overlay covering the whole screen
+   on load, fading away as if the viewer is stepping into a dark
+   space and their eyes are gradually adjusting to the campfire
+   light. Removed from the DOM once the animation finishes (see
+   script.js). Respects prefers-reduced-motion via the global
+   rule above (durations collapse to ~0, so it just disappears).
+   ============================================================ */
+.intro-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: radial-gradient(circle at 50% 46%, #050505 0%, #000 70%);
+  pointer-events: none;
+  animation: intro-veil-fade 6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes intro-veil-fade {
+  0%   { opacity: 1; }
+  55%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.intro-veil-text {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  font-family: var(--font-story);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(15px, 2.4vw, 21px);
+  letter-spacing: 0.1em;
+  color: var(--parchment);
+  text-shadow: 0 0 18px rgba(255, 158, 90, 0.32), 0 2px 12px rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+  opacity: 0;
+  /* its own gentle ease-in-out (not the veil's fast-start curve) so the
+     long fade-out reads as a slow dissolve rather than a sudden cutoff */
+  animation: intro-veil-text 6s cubic-bezier(0.45, 0, 0.4, 1) forwards;
+}
+
+@keyframes intro-veil-text {
+  0%   { opacity: 0; letter-spacing: 0.32em; }
+  10%  { opacity: 1; letter-spacing: 0.1em; }
+  28%  { opacity: 1; letter-spacing: 0.1em; }
+  50%  { opacity: 0; letter-spacing: 0.32em; }
+  100% { opacity: 0; letter-spacing: 0.32em; }
+}
+
+
 html, body {
   margin: 0;
   padding: 0;
@@ -165,6 +217,103 @@ html, body {
   image-rendering: -moz-crisp-edges;
   user-select: none;
   -webkit-user-drag: none;
+  transform-origin: 50% 46%;
+  animation: scene-emerge 6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes scene-emerge {
+  0%   { transform: scale(1.05); filter: brightness(0.3) saturate(0.85); }
+  55%  { transform: scale(1.02); filter: brightness(0.32) saturate(0.85); }
+  100% { transform: scale(1); filter: brightness(1) saturate(1); }
+}
+
+/* ============================================================
+   Ambient flicker — a faint, irregular dimming/brightening layer
+   over the whole scene, like campfire light guttering, running
+   continuously (independent of the intro veil above). Kept very
+   subtle so it reads as atmosphere, not a strobe.
+   ============================================================ */
+.ambient-flicker {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: #000;
+  opacity: 0;
+  animation: ambient-flicker-a 17s ease-in-out infinite;
+}
+
+.ambient-flicker::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  animation: ambient-flicker-b 23s ease-in-out infinite;
+  animation-delay: -6s;
+}
+
+.ambient-flicker::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  animation: ambient-flicker-deep 41s ease-in-out infinite;
+  animation-delay: -17s;
+}
+
+@keyframes ambient-flicker-a {
+  0%    { opacity: 0; }
+  3%    { opacity: 0.11; }
+  5%    { opacity: 0.03; }
+  8%    { opacity: 0.17; }
+  11%   { opacity: 0.02; }
+  13%   { opacity: 0; }
+  47%   { opacity: 0; }
+  49.5% { opacity: 0.08; }
+  51%   { opacity: 0.01; }
+  54%   { opacity: 0.14; }
+  57%   { opacity: 0; }
+  81%   { opacity: 0; }
+  83%   { opacity: 0.06; }
+  84.5% { opacity: 0.16; }
+  87%   { opacity: 0.02; }
+  89%   { opacity: 0; }
+  100%  { opacity: 0; }
+}
+
+@keyframes ambient-flicker-b {
+  0%    { opacity: 0; }
+  22%   { opacity: 0; }
+  24%   { opacity: 0.09; }
+  26%   { opacity: 0.02; }
+  27.5% { opacity: 0.12; }
+  30%   { opacity: 0; }
+  63%   { opacity: 0; }
+  65%   { opacity: 0.15; }
+  67%   { opacity: 0.03; }
+  69%   { opacity: 0.07; }
+  71%   { opacity: 0; }
+  100%  { opacity: 0; }
+}
+
+/* rare, deeper "gust" dips — much darker than the base flicker, but
+   surfacing only occasionally so the darkening itself feels random */
+@keyframes ambient-flicker-deep {
+  0%    { opacity: 0; }
+  30%   { opacity: 0; }
+  31.5% { opacity: 0.3; }
+  33%   { opacity: 0.06; }
+  34.5% { opacity: 0.42; }
+  36.5% { opacity: 0.1; }
+  38%   { opacity: 0; }
+  68%   { opacity: 0; }
+  69.5% { opacity: 0.34; }
+  71%   { opacity: 0.05; }
+  72.5% { opacity: 0.22; }
+  74%   { opacity: 0; }
+  100%  { opacity: 0; }
 }
 
 /* ============================================================

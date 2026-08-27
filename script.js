@@ -141,23 +141,35 @@
   let dogVariantIndex = 0;
 
   let captionTimer = null;
-  function showCaption(text) {
+  function showCaption(text, holdMs = 2400) {
     clearTimeout(captionTimer);
     caption.textContent = text;
     caption.classList.remove('visible');
     void caption.offsetWidth;
     caption.classList.add('visible');
-    captionTimer = setTimeout(() => caption.classList.remove('visible'), 2400);
+    captionTimer = setTimeout(() => caption.classList.remove('visible'), holdMs);
   }
 
-  // Each fx container can only play one clip at a time; track its running timer
-  // so a rapid re-click restarts cleanly instead of stacking timeouts.
+  // Each fx container tracks every pending timeout it currently owns (not
+  // just one) so a rapid re-click — or switching into/out of the meteor
+  // shower below, which schedules a whole burst of timers on one
+  // container — always cancels cleanly instead of stacking or leaving
+  // stray stars behind.
   const activeTimers = new WeakMap();
+
+  function clearElTimers(el) {
+    const timers = activeTimers.get(el);
+    if (timers) timers.forEach((id) => clearTimeout(id));
+    activeTimers.set(el, []);
+  }
+
+  function trackTimer(el, id) {
+    activeTimers.get(el).push(id);
+  }
 
   function playFxOn(el, src, frames, delay) {
     if (!el) return;
-    const prev = activeTimers.get(el);
-    if (prev) clearTimeout(prev);
+    clearElTimers(el);
     el.innerHTML = '';
 
     const img = document.createElement('img');
@@ -169,19 +181,73 @@
     requestAnimationFrame(() => img.classList.add('shown'));
 
     const totalMs = frames * delay + 150; // small buffer past the last frame
-    const timer = setTimeout(() => {
+    trackTimer(el, setTimeout(() => {
       img.classList.remove('shown');
       setTimeout(() => {
         if (el.contains(img)) el.removeChild(img);
       }, 150);
-    }, totalMs);
-    activeTimers.set(el, timer);
+    }, totalMs));
   }
 
   function playFx(key) {
     const fx = FX[key];
     if (!fx || !fx.el) return;
     playFxOn(fx.el, fx.src, fx.frames, fx.delay);
+  }
+
+  // ---------- meteor shower: every 10th click on the night sky spawns a
+  // burst of shooting stars instead of just the one. Reuses the same
+  // fx-star.gif clip (its frames are transparent except for the star
+  // trail itself), just as several staggered, randomly offset/scaled
+  // copies layered inside the same sky hotspot area. ----------
+  const NIGHT_KEY = 'night';
+  const METEOR_SHOWER_EVERY = 10;
+  const METEOR_SHOWER_CAPTION = '별똥별이 우수수 쏟아집니다!';
+  const METEOR_SHOWER_CAPTION_HOLD_MS = 5200; // keep the caption up for the whole shower
+  let nightClickCount = 0;
+
+  function playMeteorShower() {
+    const fx = FX[NIGHT_KEY];
+    const el = fx && fx.el;
+    if (!el) return;
+    clearElTimers(el);
+    el.innerHTML = '';
+
+    const { src, frames } = fx;
+    const shownDelay = 105;                 // a bit slower per frame than the plain star (80ms)
+    const totalMs = frames * shownDelay + 150; // ~1.85s each, so individual trails last longer
+    const COUNT = 14;                       // more stars, so the shower reads as sustained
+
+    for (let i = 0; i < COUNT; i++) {
+      const startDelay = i * (170 + Math.random() * 220); // spread entrances out over several seconds
+      const spawnTimer = setTimeout(() => {
+        const img = document.createElement('img');
+        img.alt = '';
+        img.src = `${src}?t=${Date.now()}_${i}`;
+        img.style.position = 'absolute';
+        img.style.inset = '0';
+        // scatter across the sky crop and vary the scale, so it doesn't
+        // read as the same single clip just repeated in place; kept close
+        // to center (a slight up-and-right bias, echoing the plain single
+        // star) and pulled in on both sides so a star's trail never gets
+        // clipped by the crop's left or right edge.
+        const dx = (Math.random() * 34 - 9).toFixed(1);
+        const dy = (Math.random() * 26 - 7).toFixed(1);
+        const scale = (Math.random() * 0.25 + 0.55).toFixed(2);
+        img.style.transform = `translate(${dx}%, ${dy}%) scale(${scale})`;
+        el.appendChild(img);
+        requestAnimationFrame(() => img.classList.add('shown'));
+
+        const removeTimer = setTimeout(() => {
+          img.classList.remove('shown');
+          setTimeout(() => {
+            if (el.contains(img)) el.removeChild(img);
+          }, 150);
+        }, totalMs);
+        trackTimer(el, removeTimer);
+      }, startDelay);
+      trackTimer(el, spawnTimer);
+    }
   }
 
   function playDogFx() {
@@ -271,6 +337,16 @@
         const dogCaption = playDogFx();
         showCaption(dogCaption);
         return;
+      }
+
+      if (target === NIGHT_KEY) {
+        nightClickCount += 1;
+        if (nightClickCount % METEOR_SHOWER_EVERY === 0) {
+          playMeteorShower();
+          playSfx(NIGHT_KEY);
+          showCaption(METEOR_SHOWER_CAPTION, METEOR_SHOWER_CAPTION_HOLD_MS);
+          return;
+        }
       }
 
       playFx(target);

@@ -492,6 +492,14 @@ html, body {
   opacity: 1;
 }
 
+/* the shooting star reads a little better sitting slightly up and to
+   the right within its sky crop, rather than dead-center; only affects
+   the plain single-star clip -- the meteor shower's own scattered stars
+   set their own inline transform per star, which overrides this */
+.fx--night img {
+  transform: translate(3%, -6%);
+}
+
 
 /* ============================================================
    Caption — overlaid near the bottom of the scene instead of

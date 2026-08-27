@@ -363,6 +363,61 @@ html, body {
 }
 
 /* ============================================================
+   Fireflies — small ambient dot particles drifting slowly over the
+   whole scene at rest (no interaction needed), like fireflies or loose
+   sparks catching the firelight. Randomized per-instance via inline
+   custom properties set in script.js: size, color, drift path,
+   twinkle timing. Purely decorative (pointer-events: none).
+   ============================================================ */
+.fireflies {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.firefly {
+  position: absolute;
+  border-radius: 50%;
+  animation-name: firefly-drift, firefly-twinkle;
+  animation-timing-function: ease-in-out, ease-in-out;
+  animation-iteration-count: infinite, infinite;
+}
+
+@keyframes firefly-drift {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(var(--dx1), var(--dy1)); }
+  50%  { transform: translate(var(--dx2), var(--dy2)); }
+  75%  { transform: translate(var(--dx3), var(--dy3)); }
+  100% { transform: translate(0, 0); }
+}
+
+/* asymmetric on purpose: a quick rise to peak, a brief hold, then a long
+   fade back down that (for some fireflies, see script.js) settles all the
+   way to fully invisible and stays gone for a while before the cycle
+   repeats — so a few of them genuinely vanish and reappear, not just dim */
+@keyframes firefly-twinkle {
+  0%   { opacity: var(--op-min); }
+  15%  { opacity: var(--op-max); }
+  35%  { opacity: var(--op-max); }
+  60%  { opacity: var(--op-min); }
+  100% { opacity: var(--op-min); }
+}
+
+/* keep them present but still (no motion trigger) for reduced-motion,
+   rather than letting the global rule collapse them into a single flash.
+   Uses a fixed, always-visible opacity here (NOT var(--op-min), which is
+   0 for the "vanishing" fireflies -- using it would leave those ones
+   permanently invisible for anyone with reduced motion on). */
+@media (prefers-reduced-motion: reduce) {
+  .firefly {
+    animation: none !important;
+    opacity: 0.5;
+  }
+}
+
+/* ============================================================
    Hotspots
    ============================================================ */
 .hotspot {

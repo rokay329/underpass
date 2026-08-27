@@ -29,11 +29,77 @@
         enterScene();
       }
     });
-    introVeil.addEventListener('animationend', () => introVeil.remove());
+    // IMPORTANT: only react to the veil's OWN fade animation ending, not
+    // to animationend events bubbling up from its children (the "눌러서
+    // 입장하기" prompt breathes forever under normal motion, but under
+    // prefers-reduced-motion every animation — including that one — is
+    // forced to finish almost instantly. Without this check, that alone
+    // would remove the veil before anyone ever taps it, skipping
+    // enterScene() entirely and leaving the scene stuck dark/zoomed in
+    // its pre-entry state forever.)
+    introVeil.addEventListener('animationend', (e) => {
+      if (e.target === introVeil) introVeil.remove();
+    });
     // safety net: if someone never taps, still let them in after a while
     // (won't have the chime, since there's no gesture to hang it on)
     setTimeout(enterScene, 12000);
   }
+
+  // ---------- fireflies: small ambient particles drifting over the whole
+  // scene at rest, no interaction required. Generated once on load with
+  // randomized size/color/drift/twinkle per instance (via inline CSS
+  // custom properties), so they don't all look identical. ----------
+  (function createFireflies() {
+    const container = document.getElementById('fireflies');
+    if (!container) return;
+
+    // white / pale yellow / warm gold / ember orange, so the mix leans
+    // warm without every speck being the same shade
+    const COLORS = ['#fff8e6', '#ffe9a8', '#ffcf8a', '#ff9d4d'];
+    const COUNT = 11;
+    const frag = document.createDocumentFragment();
+
+    for (let i = 0; i < COUNT; i++) {
+      const el = document.createElement('span');
+      el.className = 'firefly';
+
+      const size = Math.random() * 2 + 1.6;                // 1.6–3.6px, small and uneven
+      const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+      const left = Math.random() * 92 + 4;                 // 4%–96%
+      const top = Math.random() * 90 + 5;                  // 5%–95%
+      const driftDur = Math.random() * 11 + 8;             // 8–19s, slow drift
+      const twinkleDur = Math.random() * 4 + 3;            // 3–7s
+      const driftDelay = -(Math.random() * driftDur);       // negative delay: staggers start points
+      const twinkleDelay = -(Math.random() * twinkleDur);
+      const spread = Math.random() * 22 + 10;               // how far it wanders, in px
+      const rand = () => (Math.random() * spread * 2 - spread).toFixed(1);
+      // about half fully vanish for a stretch of every cycle (op-min: 0),
+      // the rest just dim way down — both read as low-key, not a light show
+      const vanishes = Math.random() < 0.55;
+      const opMin = (vanishes ? 0 : Math.random() * 0.08).toFixed(2);
+      const opMax = (Math.random() * 0.3 + 0.45).toFixed(2);
+      const glow = (size * 1.8).toFixed(1);
+      const glowSpread = (size * 0.75).toFixed(1);
+
+      el.style.cssText = [
+        `left:${left.toFixed(1)}%`,
+        `top:${top.toFixed(1)}%`,
+        `width:${size.toFixed(1)}px`,
+        `height:${size.toFixed(1)}px`,
+        `background:${color}`,
+        `box-shadow:0 0 ${glow}px ${glowSpread}px ${color}`,
+        `--dx1:${rand()}px`, `--dy1:${rand()}px`,
+        `--dx2:${rand()}px`, `--dy2:${rand()}px`,
+        `--dx3:${rand()}px`, `--dy3:${rand()}px`,
+        `--op-min:${opMin}`, `--op-max:${opMax}`,
+        `animation-duration:${driftDur.toFixed(1)}s, ${twinkleDur.toFixed(1)}s`,
+        `animation-delay:${driftDelay.toFixed(1)}s, ${twinkleDelay.toFixed(1)}s`,
+      ].join(';');
+
+      frag.appendChild(el);
+    }
+    container.appendChild(frag);
+  })();
 
   const caption = document.getElementById('caption');
 

@@ -45,7 +45,19 @@
   inset: 0;
   z-index: 50;
   background: radial-gradient(circle at 50% 46%, #050505 0%, #000 70%);
+  opacity: 1;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* the fade-out only starts once the viewer actually taps/clicks/presses
+   Enter to "enter" (see script.js) — this is also what guarantees the
+   entry chime fires in the same instant, since browsers only allow audio
+   to start on a real user gesture. Before that, everything here just
+   sits still. */
+.intro-veil.is-entering {
   pointer-events: none;
+  cursor: default;
   animation: intro-veil-fade 6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -53,6 +65,32 @@
   0%   { opacity: 1; }
   55%  { opacity: 1; }
   100% { opacity: 0; }
+}
+
+.intro-veil-prompt {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  font-family: var(--font-story);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(14px, 2.2vw, 19px);
+  letter-spacing: 0.14em;
+  color: var(--parchment-dim);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+  animation: intro-prompt-breathe 2.6s ease-in-out infinite;
+}
+
+@keyframes intro-prompt-breathe {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 0.9; }
+}
+
+.intro-veil.is-entering .intro-veil-prompt {
+  display: none;
 }
 
 .intro-veil-text {
@@ -70,8 +108,11 @@
   text-shadow: 0 0 18px rgba(255, 158, 90, 0.32), 0 2px 12px rgba(0, 0, 0, 0.85);
   white-space: nowrap;
   opacity: 0;
-  /* its own gentle ease-in-out (not the veil's fast-start curve) so the
-     long fade-out reads as a slow dissolve rather than a sudden cutoff */
+}
+
+/* its own gentle ease-in-out (not the veil's fast-start curve) so the
+   long fade-out reads as a slow dissolve rather than a sudden cutoff */
+.intro-veil.is-entering .intro-veil-text {
   animation: intro-veil-text 6s cubic-bezier(0.45, 0, 0.4, 1) forwards;
 }
 
@@ -218,6 +259,11 @@ html, body {
   user-select: none;
   -webkit-user-drag: none;
   transform-origin: 50% 46%;
+  transform: scale(1.05);
+  filter: brightness(0.3) saturate(0.85);
+}
+
+.scene.is-entering .scene-img {
   animation: scene-emerge 6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 

@@ -418,6 +418,125 @@ html, body {
 }
 
 /* ============================================================
+   Milestone events — every hotspot has a bigger, rarer reaction on
+   a specific click count (the night sky's 10-click meteor shower
+   was the first of these; this section adds one for each of the
+   others, plus a scene-wide event for total interactions). All of
+   it reuses the existing GIF clips and CSS-only particles/glow —
+   no new artwork — so it stays consistent with the pixel-art set
+   already on the page.
+   ============================================================ */
+.milestone-glow {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.milestone-particles {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* lantern (9th click): the flame sweeps through a full run of colors
+   before settling back, timed to the lantern clip's own length */
+.fx--lantern.fx-milestone-hue img {
+  animation: lantern-hue-shift 2.4s linear;
+}
+
+@keyframes lantern-hue-shift {
+  0%   { filter: hue-rotate(0deg)   saturate(1); }
+  8%   { filter: hue-rotate(45deg)  saturate(1.6); }
+  22%  { filter: hue-rotate(110deg) saturate(1.6); }
+  36%  { filter: hue-rotate(180deg) saturate(1.6); }
+  50%  { filter: hue-rotate(250deg) saturate(1.6); }
+  64%  { filter: hue-rotate(300deg) saturate(1.6); }
+  78%  { filter: hue-rotate(340deg) saturate(1.5); }
+  92%  { filter: hue-rotate(15deg)  saturate(1.2); }
+  100% { filter: hue-rotate(0deg)   saturate(1); }
+}
+
+/* tarp (5th click): a handful of small leaf/dust flecks blow across along
+   with the stronger gust, drifting rightward and tumbling as they fade */
+.leaf {
+  position: absolute;
+  width: 5px;
+  height: 3px;
+  border-radius: 60% 40% 60% 40%;
+  pointer-events: none;
+  opacity: 0;
+  animation-name: leaf-drift;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
+@keyframes leaf-drift {
+  0%   { opacity: 0; transform: translate(0, 0) rotate(0deg); }
+  12%  { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(var(--leaf-dx), var(--leaf-dy)) rotate(var(--leaf-rot)); }
+}
+
+/* dog (10th pat): a cheering moment -- a burst of small golden "buff"
+   sparks radiates out from the dog while it barks, and the whole scene
+   gets a brief, brighter surge of warm light. */
+.milestone-glow.pulse-cheer {
+  background: radial-gradient(circle at 50% 55%, rgba(255, 244, 214, 0.5) 0%, rgba(255, 205, 130, 0.22) 45%, rgba(0, 0, 0, 0) 78%);
+  animation: glow-cheer-pulse 2.6s ease-in-out;
+}
+
+@keyframes glow-cheer-pulse {
+  0%   { opacity: 0; }
+  25%  { opacity: 1; }
+  60%  { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+
+.buff-spark {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #fff3d6;
+  box-shadow: 0 0 7px 2px rgba(255, 224, 150, 0.85);
+  pointer-events: none;
+  opacity: 0;
+  animation-name: buff-spark-burst;
+  animation-duration: 0.9s;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
+@keyframes buff-spark-burst {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0.6); }
+  20%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--spark-dx), var(--spark-dy)) scale(1); }
+}
+
+/* a quick expanding ring right under the sparks, like a small shockwave */
+.buff-ring {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px; /* centers the ring on its left/top point */
+  border-radius: 50%;
+  border: 2px solid rgba(255, 224, 150, 0.85);
+  box-shadow: 0 0 10px 1px rgba(255, 224, 150, 0.5);
+  pointer-events: none;
+  opacity: 0;
+  animation: buff-ring-expand 0.9s ease-out;
+}
+
+@keyframes buff-ring-expand {
+  0%   { opacity: 0.9; transform: scale(0.3); }
+  70%  { opacity: 0.35; }
+  100% { opacity: 0; transform: scale(2.1); }
+}
+
+/* ============================================================
    Hotspots
    ============================================================ */
 .hotspot {

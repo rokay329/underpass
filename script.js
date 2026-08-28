@@ -195,6 +195,79 @@
     playFxOn(fx.el, fx.src, fx.frames, fx.delay);
   }
 
+  // ---------- milestone events: every hotspot gets a bigger, rarer
+  // reaction on a specific click count of its own (the night sky's
+  // 10-click meteor shower, above/below, was the first of these). All of
+  // it is built from the same GIF clips already loaded plus small
+  // CSS-driven particles/glow -- no new artwork needed. ----------
+  function pulseGlow(className, duration) {
+    const el = document.getElementById('milestoneGlow');
+    if (!el) return;
+    el.classList.remove('pulse-cheer');
+    void el.offsetWidth; // restart the animation even if the same class was just used
+    el.classList.add(className);
+    setTimeout(() => el.classList.remove(className), duration);
+  }
+
+  function spawnLeaves() {
+    const container = document.getElementById('milestoneParticles');
+    if (!container) return;
+    const COUNT = 5;
+    for (let i = 0; i < COUNT; i++) {
+      const el = document.createElement('span');
+      el.className = 'leaf';
+      const left = 34 + Math.random() * 10;  // starts near the tarp
+      const top = 42 + Math.random() * 8;
+      const dx = 18 + Math.random() * 14;    // drifts rightward with the gust
+      const dy = 10 + Math.random() * 14;
+      const rot = 180 + Math.random() * 360;
+      const dur = 1.6 + Math.random() * 0.8;
+      const delay = Math.random() * 400;
+      const color = Math.random() < 0.5 ? 'var(--moss)' : 'var(--ember-strong)';
+      el.style.cssText = [
+        `left:${left.toFixed(1)}%`,
+        `top:${top.toFixed(1)}%`,
+        `--leaf-dx:${dx.toFixed(1)}%`,
+        `--leaf-dy:${dy.toFixed(1)}%`,
+        `--leaf-rot:${rot.toFixed(0)}deg`,
+        `animation-duration:${dur.toFixed(2)}s`,
+        `animation-delay:${delay.toFixed(0)}ms`,
+        `background:${color}`,
+      ].join(';');
+      container.appendChild(el);
+      setTimeout(() => {
+        if (container.contains(el)) container.removeChild(el);
+      }, dur * 1000 + delay + 150);
+    }
+  }
+
+  const LANTERN_HUE_DURATION_MS = 2500; // matches lantern-hue-shift's 2.4s + a little slack
+
+  function playLanternMilestone() {
+    playFx('lantern');
+    const el = FX.lantern.el;
+    if (el) {
+      el.classList.remove('fx-milestone-hue');
+      void el.offsetWidth;
+      el.classList.add('fx-milestone-hue');
+      // must be removed again once the animation finishes -- otherwise every
+      // later click on this hotspot injects a fresh <img> that inherits the
+      // still-present class and replays the rainbow sweep forever
+      setTimeout(() => el.classList.remove('fx-milestone-hue'), LANTERN_HUE_DURATION_MS);
+    }
+  }
+
+  function playTarpMilestone() {
+    playFx('tarp');
+    spawnLeaves();
+  }
+
+  const HOTSPOT_MILESTONES = {
+    lantern: { every: 9, run: playLanternMilestone, caption: '랜턴 불빛이 알록달록, 색색이 물들었다 사라집니다.' },
+    tarp:    { every: 5, run: playTarpMilestone,    caption: '센 바람이 불어와 천막 자락과 낙엽이 함께 흩날립니다.' },
+  };
+  const hotspotClickCounts = { lantern: 0, tarp: 0 };
+
   // ---------- meteor shower: every 10th click on the night sky spawns a
   // burst of shooting stars instead of just the one. Reuses the same
   // fx-star.gif clip (its frames are transparent except for the star
@@ -256,6 +329,77 @@
     playFxOn(fxDogEl, variant.src, variant.frames, variant.delay);
     if (variant.sfx) playSfx(variant.sfx);
     return variant.caption;
+  }
+
+  // every 10th pat: a cheering moment -- the bark reaction plays with a
+  // burst of golden "buff" sparks radiating out from the dog, and the
+  // whole scene flashes with a brief surge of warm light. Doesn't touch
+  // dogVariantIndex, so the normal ear/bark alternation carries on
+  // unaffected afterward.
+  const DOG_MILESTONE_EVERY = 10;
+  const DOG_MILESTONE_CAPTION = '쿤이가 당신을 응원합니다!';
+  let dogClickCount = 0;
+
+  // roughly the center of the dog's hotspot box (left:12.115%+width:16.259%/2,
+  // top:55.323%+height:9.868%/2), reused by every buff particle below so
+  // they all radiate from the dog itself
+  const DOG_CX = 20.2;
+  const DOG_CY = 60.3;
+  const SPARK_COLORS = ['#fff3d6', '#ffd98a']; // warm white and gold, alternating
+
+  function spawnBuffSparks(count, ringDist) {
+    const container = document.getElementById('milestoneParticles');
+    if (!container) return;
+    for (let i = 0; i < count; i++) {
+      const el = document.createElement('span');
+      el.className = 'buff-spark';
+      const angle = (Math.PI * 2 * i) / count + (Math.random() * 0.4 - 0.2);
+      const dist = ringDist + Math.random() * 22; // px -- translate() needs
+                                                    // real units here, not
+                                                    // %, since % on a tiny
+                                                    // element resolves
+                                                    // against its OWN size
+      const dx = (Math.cos(angle) * dist).toFixed(1);
+      const dy = (Math.sin(angle) * dist * 0.7).toFixed(1); // flattened a bit
+      const delay = Math.random() * 150;
+      const color = SPARK_COLORS[i % SPARK_COLORS.length];
+      el.style.cssText = [
+        `left:${DOG_CX.toFixed(1)}%`,
+        `top:${DOG_CY.toFixed(1)}%`,
+        `--spark-dx:${dx}px`,
+        `--spark-dy:${dy}px`,
+        `animation-delay:${delay.toFixed(0)}ms`,
+        `background:${color}`,
+      ].join(';');
+      container.appendChild(el);
+      setTimeout(() => {
+        if (container.contains(el)) container.removeChild(el);
+      }, 900 + delay + 150);
+    }
+  }
+
+  // an expanding golden ring, like a small shockwave, right under the sparks
+  function spawnBuffRing() {
+    const container = document.getElementById('milestoneParticles');
+    if (!container) return;
+    const el = document.createElement('span');
+    el.className = 'buff-ring';
+    el.style.cssText = `left:${DOG_CX.toFixed(1)}%;top:${DOG_CY.toFixed(1)}%;`;
+    container.appendChild(el);
+    setTimeout(() => {
+      if (container.contains(el)) container.removeChild(el);
+    }, 950);
+  }
+
+  function playDogMilestone() {
+    const bark = DOG_VARIANTS[1];
+    playFxOn(fxDogEl, bark.src, bark.frames, bark.delay);
+    playSfx('dog');
+    spawnBuffRing();
+    spawnBuffSparks(10, 30);          // first burst, right away
+    setTimeout(() => spawnBuffSparks(6, 42), 220); // second, wider wave right behind it
+    pulseGlow('pulse-cheer', 2600);
+    return DOG_MILESTONE_CAPTION;
   }
 
   // ---------- interaction sound effects (Web Audio API — supports overlapping
@@ -334,8 +478,10 @@
       const target = btn.dataset.target;
 
       if (target === 'dog') {
-        const dogCaption = playDogFx();
-        showCaption(dogCaption);
+        dogClickCount += 1;
+        const isDogMilestone = dogClickCount % DOG_MILESTONE_EVERY === 0;
+        const dogCaption = isDogMilestone ? playDogMilestone() : playDogFx();
+        showCaption(dogCaption, isDogMilestone ? 3000 : 2400);
         return;
       }
 
@@ -345,6 +491,17 @@
           playMeteorShower();
           playSfx(NIGHT_KEY);
           showCaption(METEOR_SHOWER_CAPTION, METEOR_SHOWER_CAPTION_HOLD_MS);
+          return;
+        }
+      }
+
+      const milestone = HOTSPOT_MILESTONES[target];
+      if (milestone) {
+        hotspotClickCounts[target] += 1;
+        if (hotspotClickCounts[target] % milestone.every === 0) {
+          milestone.run();
+          playSfx(target);
+          showCaption(milestone.caption, 3200);
           return;
         }
       }

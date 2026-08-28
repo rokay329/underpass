@@ -326,6 +326,11 @@
   function playDogFx() {
     const variant = DOG_VARIANTS[dogVariantIndex];
     dogVariantIndex = (dogVariantIndex + 1) % DOG_VARIANTS.length;
+    // the ear-perk clip only ever redraws the ears/forehead, well above the
+    // eyes -- give it its own tighter mask (see style.css) so that zone is
+    // the only part of the frame that can ever show, instead of sharing the
+    // bark clip's taller mask which was drawn to also cover its mouth movement
+    if (fxDogEl) fxDogEl.classList.toggle('fx-dog-ear', variant === DOG_VARIANTS[0]);
     playFxOn(fxDogEl, variant.src, variant.frames, variant.delay);
     if (variant.sfx) playSfx(variant.sfx);
     return variant.caption;
@@ -399,6 +404,7 @@
 
   function playDogMilestone() {
     const bark = DOG_VARIANTS[1];
+    if (fxDogEl) fxDogEl.classList.remove('fx-dog-ear'); // always the bark clip, never the tight ear mask
     playFxOn(fxDogEl, bark.src, bark.frames, bark.delay);
     playSfx('dog');
     spawnBuffRing();

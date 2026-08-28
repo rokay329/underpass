@@ -619,12 +619,25 @@ html, body {
    crop, and that patch's hard alpha edge doesn't quite match the softer
    silhouette of the resting dog underneath, which can read as a slight
    dent right at the boundary. A wide, mostly-opaque radial fade keeps
-   the actual artwork (ears/heart/mouth, which stay well inside this
-   zone) untouched while feathering the outer edge of the overlay so it
-   blends into the base art instead of ending in a hard rectangle. */
+   the actual artwork (heart/mouth, which stay well inside this zone)
+   untouched while feathering the outer edge of the overlay so it blends
+   into the base art instead of ending in a hard rectangle. This is the
+   default/bark mask -- the ear-perk clip below gets its own, tighter one. */
 .fx--dog img {
   mask-image: radial-gradient(ellipse 62% 68% at 56% 30%, #000 65%, transparent 100%);
   -webkit-mask-image: radial-gradient(ellipse 62% 68% at 56% 30%, #000 65%, transparent 100%);
+}
+
+/* ear-perk clip only: its own artwork never draws below the ears/forehead
+   (roughly the top quarter of the crop), so instead of the taller mask
+   above -- which was sized for the bark clip's mouth movement and left
+   enough of the lower frame visible to occasionally show a seam against
+   the resting dog underneath, reading as a "dent" in the face -- clip
+   hard to that top band. Nothing from this clip can ever reach the eyes
+   or muzzle now, whatever a given frame's edges look like. */
+.fx--dog.fx-dog-ear img {
+  mask-image: linear-gradient(to bottom, #000 0%, #000 32%, transparent 44%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 32%, transparent 44%);
 }
 
 

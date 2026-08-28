@@ -628,16 +628,15 @@ html, body {
   -webkit-mask-image: radial-gradient(ellipse 62% 68% at 56% 30%, #000 65%, transparent 100%);
 }
 
-/* ear-perk clip only: its own artwork never draws below the ears/forehead
-   (roughly the top quarter of the crop), so instead of the taller mask
-   above -- which was sized for the bark clip's mouth movement and left
-   enough of the lower frame visible to occasionally show a seam against
-   the resting dog underneath, reading as a "dent" in the face -- clip
-   hard to that top band. Nothing from this clip can ever reach the eyes
-   or muzzle now, whatever a given frame's edges look like. */
+/* ear-perk clip only: the GIF asset itself is now hard-cropped (alpha
+   zeroed) below the ears/forehead band -- see fx-dog-ear.gif -- so this
+   mask is a second, redundant safety net rather than the only thing
+   preventing the "dent" look. Cut with NO feather (a razor-thin step,
+   not a gradient) so there's no partial-transparency band where a
+   half-opacity dark pixel could still blend into a visible smudge. */
 .fx--dog.fx-dog-ear img {
-  mask-image: linear-gradient(to bottom, #000 0%, #000 32%, transparent 44%);
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 32%, transparent 44%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 30%, transparent 30.5%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 30%, transparent 30.5%);
 }
 
 

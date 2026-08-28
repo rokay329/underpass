@@ -340,12 +340,18 @@
   const DOG_MILESTONE_CAPTION = '쿤이가 당신을 응원합니다!';
   let dogClickCount = 0;
 
-  // roughly the center of the dog's hotspot box (left:12.115%+width:16.259%/2,
-  // top:55.323%+height:9.868%/2), reused by every buff particle below so
-  // they all radiate from the dog itself
-  const DOG_CX = 20.2;
-  const DOG_CY = 60.3;
+  // center of the dog's actual drawn face within the bark clip -- measured
+  // from fx-dog-bark.gif's own non-transparent content (not the fx box's
+  // geometric center, which sits noticeably lower/left of the face since
+  // the clip has a lot of empty margin around the character), then mapped
+  // into the fx box's position on the scene (left:12.115%, top:55.323%,
+  // width:16.259%, height:9.868%). Reused by every buff particle so they
+  // all radiate from where the bark is actually happening.
+  const DOG_CX = 20.3;
+  const DOG_CY = 59.0;
   const SPARK_COLORS = ['#fff3d6', '#ffd98a']; // warm white and gold, alternating
+  const BUFF_SPARK_DURATION_MS = 1300; // was 900 -- sparks now drift and hang longer
+  const BUFF_RING_DURATION_MS = 1400;  // was 900 -- ring expands more slowly
 
   function spawnBuffSparks(count, ringDist) {
     const container = document.getElementById('milestoneParticles');
@@ -374,7 +380,7 @@
       container.appendChild(el);
       setTimeout(() => {
         if (container.contains(el)) container.removeChild(el);
-      }, 900 + delay + 150);
+      }, BUFF_SPARK_DURATION_MS + delay + 150);
     }
   }
 
@@ -388,7 +394,7 @@
     container.appendChild(el);
     setTimeout(() => {
       if (container.contains(el)) container.removeChild(el);
-    }, 950);
+    }, BUFF_RING_DURATION_MS + 50);
   }
 
   function playDogMilestone() {
@@ -396,9 +402,10 @@
     playFxOn(fxDogEl, bark.src, bark.frames, bark.delay);
     playSfx('dog');
     spawnBuffRing();
-    spawnBuffSparks(10, 30);          // first burst, right away
-    setTimeout(() => spawnBuffSparks(6, 42), 220); // second, wider wave right behind it
-    pulseGlow('pulse-cheer', 2600);
+    spawnBuffSparks(10, 30);                          // first burst, right away
+    setTimeout(() => spawnBuffSparks(7, 44), 260);     // second, wider wave
+    setTimeout(() => spawnBuffSparks(5, 56), 560);     // third, widest -- stretches the burst out
+    pulseGlow('pulse-cheer', 3400);
     return DOG_MILESTONE_CAPTION;
   }
 
@@ -481,7 +488,7 @@
         dogClickCount += 1;
         const isDogMilestone = dogClickCount % DOG_MILESTONE_EVERY === 0;
         const dogCaption = isDogMilestone ? playDogMilestone() : playDogFx();
-        showCaption(dogCaption, isDogMilestone ? 3000 : 2400);
+        showCaption(dogCaption, isDogMilestone ? 3600 : 2400);
         return;
       }
 

@@ -485,7 +485,7 @@ html, body {
    gets a brief, brighter surge of warm light. */
 .milestone-glow.pulse-cheer {
   background: radial-gradient(circle at 50% 55%, rgba(255, 244, 214, 0.5) 0%, rgba(255, 205, 130, 0.22) 45%, rgba(0, 0, 0, 0) 78%);
-  animation: glow-cheer-pulse 2.6s ease-in-out;
+  animation: glow-cheer-pulse 3.4s ease-in-out;
 }
 
 @keyframes glow-cheer-pulse {
@@ -505,7 +505,7 @@ html, body {
   pointer-events: none;
   opacity: 0;
   animation-name: buff-spark-burst;
-  animation-duration: 0.9s;
+  animation-duration: 1.3s;
   animation-timing-function: ease-out;
   animation-fill-mode: forwards;
 }
@@ -527,13 +527,13 @@ html, body {
   box-shadow: 0 0 10px 1px rgba(255, 224, 150, 0.5);
   pointer-events: none;
   opacity: 0;
-  animation: buff-ring-expand 0.9s ease-out;
+  animation: buff-ring-expand 1.4s ease-out;
 }
 
 @keyframes buff-ring-expand {
   0%   { opacity: 0.9; transform: scale(0.3); }
   70%  { opacity: 0.35; }
-  100% { opacity: 0; transform: scale(2.1); }
+  100% { opacity: 0; transform: scale(2.3); }
 }
 
 /* ============================================================

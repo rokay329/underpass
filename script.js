@@ -139,6 +139,12 @@
     { src: 'assets/fx-dog-bark.gif', frames: 11, delay: 110, caption: '쿤이가 멍멍 짖습니다!',          sfx: 'dog' },
   ];
   let dogVariantIndex = 0;
+  // #fxDog's own top: normally the resting/bark position, nudged down to
+  // 55.7% only while the ear-perk clip is showing, so the ears+hearts clear
+  // the dog's real ears with no overlap (set directly on the element --
+  // not via a transform -- so its layout position is unambiguous).
+  const DOG_TOP_DEFAULT = '53.4%';
+  const DOG_TOP_EAR = '53.4%';
 
   let captionTimer = null;
   function showCaption(text, holdMs = 2400) {
@@ -330,7 +336,11 @@
     // eyes -- give it its own tighter mask (see style.css) so that zone is
     // the only part of the frame that can ever show, instead of sharing the
     // bark clip's taller mask which was drawn to also cover its mouth movement
-    if (fxDogEl) fxDogEl.classList.toggle('fx-dog-ear', variant === DOG_VARIANTS[0]);
+    const isEar = variant === DOG_VARIANTS[0];
+    if (fxDogEl) {
+      fxDogEl.classList.toggle('fx-dog-ear', isEar);
+      fxDogEl.style.top = isEar ? DOG_TOP_EAR : DOG_TOP_DEFAULT;
+    }
     playFxOn(fxDogEl, variant.src, variant.frames, variant.delay);
     if (variant.sfx) playSfx(variant.sfx);
     return variant.caption;
@@ -404,7 +414,10 @@
 
   function playDogMilestone() {
     const bark = DOG_VARIANTS[1];
-    if (fxDogEl) fxDogEl.classList.remove('fx-dog-ear'); // always the bark clip, never the tight ear mask
+    if (fxDogEl) {
+      fxDogEl.classList.remove('fx-dog-ear'); // always the bark clip, never the tight ear mask
+      fxDogEl.style.top = DOG_TOP_DEFAULT;
+    }
     playFxOn(fxDogEl, bark.src, bark.frames, bark.delay);
     playSfx('dog');
     spawnBuffRing();

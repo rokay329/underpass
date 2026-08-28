@@ -622,8 +622,19 @@ html, body {
    the actual artwork (heart/mouth, which stay well inside this zone)
    untouched while feathering the outer edge of the overlay so it blends
    into the base art instead of ending in a hard rectangle. This is the
-   default/bark mask -- the ear-perk clip below gets its own, tighter one. */
+   default/bark mask -- the ear-perk clip below gets its own, tighter one.
+
+   #fxDog's own `top` (see script.js) is nudged between two fixed values
+   depending on which clip is playing -- plain layout position, no
+   transform. The container is taller than the GIF's native 165px, so
+   the image is anchored to the container's *bottom* edge (height:auto,
+   not a 100% stretch) -- that way each clip's own vertical size/aspect
+   stays correct no matter where the container's top lands. */
 .fx--dog img {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: auto;
   mask-image: radial-gradient(ellipse 62% 68% at 56% 30%, #000 65%, transparent 100%);
   -webkit-mask-image: radial-gradient(ellipse 62% 68% at 56% 30%, #000 65%, transparent 100%);
 }
@@ -637,7 +648,12 @@ html, body {
    that can show up as its own visible seam on some renderers (this is
    what was still showing on a real phone after the GIF fix landed).
    Explicitly clearing mask-image here also stops the broader radial
-   mask above (meant for the bark clip) from applying by default. */
+   mask above (meant for the bark clip) from applying by default.
+
+   On top of that, this clip is nudged upward (translateY) into the
+   extra headroom added to #fxDog's container above, so the ears/hearts
+   render clearly above the dog's head with visible sky behind them --
+   sidestepping any head/face overlap regardless of its cause. */
 .fx--dog.fx-dog-ear img {
   mask-image: none;
   -webkit-mask-image: none;

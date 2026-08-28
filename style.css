@@ -628,15 +628,19 @@ html, body {
   -webkit-mask-image: radial-gradient(ellipse 62% 68% at 56% 30%, #000 65%, transparent 100%);
 }
 
-/* ear-perk clip only: the GIF asset itself is now hard-cropped (alpha
-   zeroed) below the ears/forehead band -- see fx-dog-ear.gif -- so this
-   mask is a second, redundant safety net rather than the only thing
-   preventing the "dent" look. Cut with NO feather (a razor-thin step,
-   not a gradient) so there's no partial-transparency band where a
-   half-opacity dark pixel could still blend into a visible smudge. */
+/* ear-perk clip only: NO mask here, deliberately. The GIF asset itself
+   was rebuilt (see fx-dog-ear.gif) to be truly transparent everywhere
+   except the actual ears/hearts/fur art -- a baked-in dark "sky" fill
+   that used to cover its whole frame was flood-filled out pixel by
+   pixel. A CSS mask is no longer needed to hide anything, and a hard,
+   feather-less mask edge turned out to be exactly the kind of thing
+   that can show up as its own visible seam on some renderers (this is
+   what was still showing on a real phone after the GIF fix landed).
+   Explicitly clearing mask-image here also stops the broader radial
+   mask above (meant for the bark clip) from applying by default. */
 .fx--dog.fx-dog-ear img {
-  mask-image: linear-gradient(to bottom, #000 0%, #000 30%, transparent 30.5%);
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 30%, transparent 30.5%);
+  mask-image: none;
+  -webkit-mask-image: none;
 }
 
 

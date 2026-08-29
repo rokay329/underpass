@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=EB+Garamond:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260829-25">
+<link rel="stylesheet" href="style.css?v=20260829-29">
 </head>
 <body>
 
@@ -21,23 +21,6 @@
     <span class="bgm-icon">♪</span>
   </button>
   <audio id="bgmAudio" src="assets/bgm.mp3" loop preload="auto"></audio>
-
-  <!-- chalk-dust texture for the wall-frame caption: fractal noise masked to
-       the text's own glyph shapes (so the grain only shows inside the
-       letters, not as a rectangular patch) plus a slight edge displacement
-       so the strokes read as hand-chalked rather than a clean font. -->
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-    <filter id="chalk-filter" x="-30%" y="-30%" width="160%" height="160%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4" result="noise"></feTurbulence>
-      <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.6" xChannelSelector="R" yChannelSelector="G" result="displaced"></feDisplacementMap>
-      <feColorMatrix in="noise" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.85 0" result="whiteNoise"></feColorMatrix>
-      <feComposite in="whiteNoise" in2="displaced" operator="in" result="grain"></feComposite>
-      <feMerge>
-        <feMergeNode in="displaced"></feMergeNode>
-        <feMergeNode in="grain"></feMergeNode>
-      </feMerge>
-    </filter>
-  </svg>
 
   <main class="stage">
     <div class="scene-frame" id="sceneFrame">
@@ -61,19 +44,10 @@
       <div class="milestone-glow" id="milestoneGlow" aria-hidden="true"></div>
       <div class="milestone-particles" id="milestoneParticles" aria-hidden="true"></div>
 
-      <!-- wall frame: a purely decorative wooden picture frame hung on the
-           right wall, with a fixed chalkboard-style caption. Not a hotspot --
-           just background flavor. The frame art is drawn front-on with its
-           chalkboard fill baked in, so .wall-frame-plate just positions the
-           text over that painted board; the chalk-dust look comes from the
-           #chalk-filter SVG filter. To change the text, just edit the span
-           below. -->
-      <div class="wall-frame" id="wallFrame" aria-hidden="true" style="left:78%; top:37.8%; width:13.82%; height:7.67%;">
-        <img class="wall-frame-img" src="assets/wall-frame.png" alt="">
-        <div class="wall-frame-plate">
-          <span class="wall-frame-text">오늘도 당데!</span>
-        </div>
-      </div>
+      <!-- wall frame: the wooden picture frame + chalkboard on the right
+           wall is baked directly into scene.png. No text overlay here --
+           the user draws the caption text directly into the background
+           art themselves. -->
 
       <!-- fx containers: sized/positioned to match each generated GIF's crop exactly.
            JS injects a fresh <img> into these on click and removes it when the clip ends. -->
@@ -118,6 +92,6 @@
     <p>모닥불 · 침대 · 밤하늘 · 물웅덩이 · 랜턴 · 천막 자락 · 쿤이 — 일곱 곳을 모두 눌러보세요.</p>
   </footer>
 
-  <script src="script.js?v=20260829-25"></script>
+  <script src="script.js?v=20260829-29"></script>
 </body>
 </html>

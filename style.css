@@ -428,6 +428,271 @@ html, body {
 }
 
 /* ============================================================
+   Water shimmer — a faint band of moving light/dark stripes laid
+   over the river's reflection under the bridge, blended with the
+   art underneath (mix-blend-mode) rather than drawn on top of it,
+   so it reads as the water surface stirring instead of a visible
+   overlay. Masked to a soft-edged rectangle roughly matching the
+   reflection band so it doesn't smear onto the stonework above it.
+   ============================================================ */
+.water-shimmer {
+  position: absolute;
+  left: 8%;
+  top: 45.9%;
+  width: 27%;
+  height: 4.8%;
+  z-index: 1;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(200, 225, 255, 0.6) 0px,
+    rgba(200, 225, 255, 0.6) 5px,
+    transparent 5px,
+    transparent 17px
+  );
+  background-size: 100% 56px;
+  mix-blend-mode: overlay;
+  opacity: 0.85;
+  mask-image: radial-gradient(ellipse 55% 60% at 50% 50%, #000 55%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 55% 60% at 50% 50%, #000 55%, transparent 100%);
+  animation: water-shimmer-drift 28s linear infinite;
+}
+
+/* a second, slower/brighter band riding over the first so the surface
+   reads as moving water rather than a single scrolling stripe pattern */
+.water-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 235, 200, 0.4) 0px,
+    rgba(255, 235, 200, 0.4) 6px,
+    transparent 6px,
+    transparent 26px
+  );
+  background-size: 100% 96px;
+  mix-blend-mode: soft-light;
+  animation: water-shimmer-drift-b 44s linear infinite reverse;
+}
+
+@keyframes water-shimmer-drift {
+  0%   { background-position-y: 0; }
+  100% { background-position-y: 448px; }
+}
+
+@keyframes water-shimmer-drift-b {
+  0%   { background-position-y: 0; }
+  100% { background-position-y: 768px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .water-shimmer { animation: none !important; }
+}
+
+/* ============================================================
+   City lights — a handful of the skyline's lit windows breathing
+   very gently in brightness, like distant lights seen across a
+   river (never fully off — these are windows, not fireflies).
+   Positioned at fixed points (see script.js, CITY_LIGHT_POINTS)
+   sampled from the art's own window-light pixels, so each dot
+   sits exactly on a real window instead of floating near one.
+   ============================================================ */
+.city-lights {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.city-light {
+  position: absolute;
+  border-radius: 50%;
+  background: #ffd9a0;
+  animation-name: city-light-breathe;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes city-light-breathe {
+  0%, 100% { opacity: var(--op-min); }
+  50%      { opacity: var(--op-max); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .city-light { animation: none !important; opacity: 0.85; }
+}
+
+/* ============================================================
+   Puddle stars — the same night sky, faintly mirrored in the
+   water below: a few of its stars catch a glint every so often.
+   Sparser and rarer than the city lights (mostly dim, occasional
+   bright flash) since it's meant to read as a rare glint, not a
+   steady twinkle.
+   ============================================================ */
+.puddle-stars {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.puddle-star {
+  position: absolute;
+  border-radius: 50%;
+  background: #eaf1ff;
+  animation-name: puddle-star-glint;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes puddle-star-glint {
+  0%   { opacity: var(--op-min); }
+  85%  { opacity: var(--op-min); }
+  91%  { opacity: var(--op-max); }
+  97%  { opacity: var(--op-min); }
+  100% { opacity: var(--op-min); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .puddle-star { animation: none !important; opacity: 0.25; }
+}
+
+/* ============================================================
+   Pipe drip — an occasional droplet forming at one of the wall's
+   two pipe joints and falling a short distance before fading. Two
+   independent locations (the two pipes visible on the right wall),
+   each with its own pair of drops on different, non-matching
+   timings, so drops appear to fall from one side or the other at
+   random rather than both pipes dripping in the same visible beat.
+   ============================================================ */
+.pipe-drip {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.pipe-drip--a { left: 91.605%; top: 29.605%; }
+.pipe-drip--b { left: 68.012%; top: 33.014%; }
+
+.pipe-drop {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 3px;
+  height: 4px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: linear-gradient(#cfe4ff, #8fb8e8);
+  opacity: 0;
+  animation: pipe-drop-fall 6.5s ease-in infinite;
+}
+
+.pipe-drop--b {
+  animation-delay: -3.1s;
+  animation-duration: 7.8s;
+}
+
+.pipe-drop--c {
+  animation-delay: -1.6s;
+  animation-duration: 9.4s;
+}
+
+.pipe-drop--d {
+  animation-delay: -5.8s;
+  animation-duration: 5.7s;
+}
+
+@keyframes pipe-drop-fall {
+  0%   { opacity: 0; transform: translateY(0) scaleY(1); }
+  2%   { opacity: 0.9; transform: translateY(0) scaleY(1); }
+  9%   { opacity: 0.85; transform: translateY(15px) scaleY(1.4); }
+  11%  { opacity: 0; transform: translateY(17px) scaleY(0.4); }
+  100% { opacity: 0; transform: translateY(0) scaleY(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pipe-drop { animation: none !important; opacity: 0; }
+}
+
+/* ============================================================
+   Campfire idle effect — the painted flame in scene.png is static,
+   so at rest (before any click) the firepit gets its own always-on
+   glow pulse plus a few embers drifting up out of the flame, the
+   same way the rest of the scene has ambient motion. Independent of
+   the click-triggered fx-fire.gif overlay -- this keeps running
+   underneath it too.
+   ============================================================ */
+.fire-glow {
+  position: absolute;
+  left: 52%;
+  top: 49.5%;
+  width: 21.5%;
+  height: 21.5%;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    circle,
+    rgba(255, 180, 95, 0.42) 0%,
+    rgba(255, 155, 70, 0.24) 24%,
+    rgba(255, 130, 50, 0.11) 46%,
+    rgba(255, 120, 40, 0.03) 68%,
+    transparent 85%
+  );
+  filter: blur(7px);
+  mix-blend-mode: screen;
+  animation: fire-glow-pulse 3.6s ease-in-out infinite;
+}
+
+@keyframes fire-glow-pulse {
+  0%   { opacity: 0.55; transform: scale(1); }
+  28%  { opacity: 0.85; transform: scale(1.07); }
+  50%  { opacity: 0.6;  transform: scale(0.96); }
+  74%  { opacity: 0.92; transform: scale(1.05); }
+  100% { opacity: 0.55; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fire-glow { animation: none !important; opacity: 0.65; }
+}
+
+.fire-embers {
+  position: absolute;
+  left: 58%;
+  top: 48.5%;
+  width: 10%;
+  height: 7%;
+  z-index: 2;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.ember {
+  position: absolute;
+  bottom: 0;
+  border-radius: 50%;
+  animation-name: ember-rise;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+}
+
+/* fixed px rise (not %, which would resolve against the ember's own tiny
+   size, not the emitter box) -- .scene is a fixed native-pixel stage that
+   gets uniformly transform-scaled, so plain px stays correctly proportioned
+   at any viewport size, same as the pipe-drop droplets do. */
+@keyframes ember-rise {
+  0%   { transform: translate(0, 0) scale(1);   opacity: 0; }
+  10%  { opacity: var(--op-max); }
+  55%  { transform: translate(var(--dx), -50px) scale(0.75); opacity: var(--op-mid); }
+  100% { transform: translate(var(--dx2), -108px) scale(0.35); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ember { animation: none !important; opacity: 0; }
+}
+
+/* ============================================================
    Milestone events — every hotspot has a bigger, rarer reaction on
    a specific click count (the night sky's 10-click meteor shower
    was the first of these; this section adds one for each of the

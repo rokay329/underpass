@@ -149,6 +149,134 @@
     container.appendChild(frag);
   })();
 
+  // ---------- city lights: a handful of the skyline's own lit windows,
+  // sampled from the artwork's actual bright-window pixels (via an
+  // offline color analysis of scene.png), breathing gently in brightness.
+  // Fixed positions, not drifting -- these are windows, not fireflies. ----------
+  (function createCityLights() {
+    const container = document.getElementById('cityLights');
+    if (!container) return;
+    const POINTS = [
+      { left: 8.980,  top: 38.816 },
+      { left: 12.847, top: 37.859 },
+      { left: 14.547, top: 38.736 },
+      { left: 16.743, top: 40.371 },
+      { left: 20.156, top: 39.932 },
+      { left: 21.945, top: 41.118 },
+      { left: 26.196, top: 39.563 },
+      { left: 29.729, top: 41.313 },
+      { left: 35.160, top: 40.661 },
+      { left: 36.800, top: 38.850 },
+      { left: 38.417, top: 38.935 },
+    ];
+    const frag = document.createDocumentFragment();
+    POINTS.forEach((p) => {
+      const el = document.createElement('span');
+      el.className = 'city-light';
+      const size = (Math.random() * 1.4 + 2.2).toFixed(1);
+      const dur = (Math.random() * 4 + 4).toFixed(1);       // 4–8s
+      const delay = (-(Math.random() * dur)).toFixed(1);
+      const opMin = (Math.random() * 0.2 + 0.45).toFixed(2); // never fully off
+      const opMax = (Math.random() * 0.15 + 0.9).toFixed(2);
+      const glow = (size * 2.6).toFixed(1);
+      el.style.cssText = [
+        `left:${p.left}%`, `top:${p.top}%`,
+        `width:${size}px`, `height:${size}px`,
+        `box-shadow:0 0 ${glow}px rgba(255,217,160,0.85)`,
+        `--op-min:${opMin}`, `--op-max:${opMax}`,
+        `animation-duration:${dur}s`,
+        `animation-delay:${delay}s`,
+      ].join(';');
+      frag.appendChild(el);
+    });
+    container.appendChild(frag);
+  })();
+
+  // ---------- puddle stars: a few of the same night sky's stars, faintly
+  // mirrored in the water below, catching a rare glint. Sparser and much
+  // less frequent than the city lights -- mostly invisible, occasional
+  // brief flash -- so it reads as "every so often" rather than a twinkle
+  // you'd actually notice most of the time. ----------
+  (function createPuddleStars() {
+    const container = document.getElementById('puddleStars');
+    if (!container) return;
+    const POINTS = [
+      { left: 24.708, top: 75.329 },
+      { left: 31.615, top: 82.028 },
+      { left: 27.790, top: 84.360 },
+      { left: 30.641, top: 85.068 },
+      { left: 27.559, top: 85.666 },
+      { left: 25.399, top: 74.821 },
+      { left: 24.867, top: 76.435 },
+      { left: 24.867, top: 85.646 },
+      { left: 15.409, top: 87.620 },
+    ];
+    const frag = document.createDocumentFragment();
+    POINTS.forEach((p) => {
+      const el = document.createElement('span');
+      el.className = 'puddle-star';
+      const size = (Math.random() * 1.2 + 1.8).toFixed(1);
+      const dur = (Math.random() * 4 + 5).toFixed(1);         // 5–9s, still rare but more often
+      const delay = (-(Math.random() * dur)).toFixed(1);
+      const opMin = (Math.random() * 0.05).toFixed(2);        // basically invisible
+      const opMax = (Math.random() * 0.3 + 0.7).toFixed(2);
+      const glow = (size * 3).toFixed(1);
+      el.style.cssText = [
+        `left:${p.left}%`, `top:${p.top}%`,
+        `width:${size}px`, `height:${size}px`,
+        `box-shadow:0 0 ${glow}px rgba(234,241,255,0.9)`,
+        `--op-min:${opMin}`, `--op-max:${opMax}`,
+        `animation-duration:${dur}s`,
+        `animation-delay:${delay}s`,
+      ].join(';');
+      frag.appendChild(el);
+    });
+    container.appendChild(frag);
+  })();
+
+  // ---------- fire embers: a handful of small sparks rising continuously
+  // out of the (otherwise static) painted campfire, so the firepit reads
+  // as active even before it's clicked. Independent of the click-triggered
+  // fx-fire.gif overlay -- these keep drifting underneath it too. ----------
+  (function createFireEmbers() {
+    const container = document.getElementById('fireEmbers');
+    if (!container) return;
+    const COLORS = ['#ffcf7a', '#ff9d4d', '#ff7a3d', '#ffe6a8'];
+    const COUNT = 7;
+    const frag = document.createDocumentFragment();
+
+    for (let i = 0; i < COUNT; i++) {
+      const el = document.createElement('span');
+      el.className = 'ember';
+
+      const size = (Math.random() * 1.6 + 1.6).toFixed(1);      // 1.6–3.2px
+      const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+      const left = (Math.random() * 60 + 20).toFixed(1);        // 20%–80% across the emitter box
+      const dur = (Math.random() * 2.4 + 2.6).toFixed(1);       // 2.6–5s, quick rise
+      const delay = (-(Math.random() * dur)).toFixed(1);
+      const dx = (Math.random() * 16 - 8).toFixed(1);           // slight drift mid-rise
+      const dx2 = (Math.random() * 26 - 13).toFixed(1);         // more drift by the top
+      const opMax = (Math.random() * 0.25 + 0.7).toFixed(2);
+      const opMid = (Math.random() * 0.2 + 0.35).toFixed(2);
+      const glow = (size * 2.2).toFixed(1);
+
+      el.style.cssText = [
+        `left:${left}%`,
+        `width:${size}px`,
+        `height:${size}px`,
+        `background:${color}`,
+        `box-shadow:0 0 ${glow}px ${color}`,
+        `--dx:${dx}px`, `--dx2:${dx2}px`,
+        `--op-max:${opMax}`, `--op-mid:${opMid}`,
+        `animation-duration:${dur}s`,
+        `animation-delay:${delay}s`,
+      ].join(';');
+
+      frag.appendChild(el);
+    }
+    container.appendChild(frag);
+  })();
+
   const caption = document.getElementById('caption');
 
   const FX = {

@@ -93,35 +93,105 @@
   display: none;
 }
 
+/* Same rolled-parchment scroll used for the in-scene .caption (see
+   the big note above that rule for why it's built this way: a
+   continuous fill image inset under two roll-cap pseudo-elements,
+   no border-image seam). Reused here so the "굴따 진입 중…" line
+   opens and closes with the same unfurl/fold motion as every other
+   caption in the piece, instead of its own separate opacity+letter-
+   spacing dissolve. */
 .intro-veil-text {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
   margin: 0;
+  width: max-content;
+  box-sizing: border-box;
   font-family: var(--font-story);
   font-style: italic;
   font-weight: 400;
   font-size: clamp(15px, 2.4vw, 21px);
   letter-spacing: 0.1em;
-  color: var(--parchment);
-  text-shadow: 0 0 18px rgba(255, 158, 90, 0.32), 0 2px 12px rgba(0, 0, 0, 0.85);
+  color: #3c2a16;
+  text-align: center;
   white-space: nowrap;
-  opacity: 0;
+  text-shadow: 0 1px 0 rgba(255, 245, 220, 0.35);
+  padding: 1.1em calc(48px + 1.1em);
+  background-image: url('assets/caption-scroll-fill.png');
+  background-size: calc(100% - 80px) 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  /* closed by default -- clipped to a zero-width line at the
+     horizontal center, same as .caption's resting state */
+  clip-path: inset(0 50% 0 50%);
 }
 
-/* its own gentle ease-in-out (not the veil's fast-start curve) so the
-   long fade-out reads as a slow dissolve rather than a sudden cutoff */
+.intro-veil-text::before,
+.intro-veil-text::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 48px;
+  background-image: url('assets/caption-scroll.png');
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+.intro-veil-text::before {
+  left: calc(50% - 24px);
+  background-position: left top;
+  background-size: 429px 100%;
+}
+
+.intro-veil-text::after {
+  right: calc(50% - 24px);
+  background-position: right top;
+  background-size: 433px 100%;
+}
+
+/* Single keyframe animation (not a class-toggle transition, since
+   this runs once on a fixed timeline alongside the rest of the intro
+   sequence) driving the box's clip-path and both caps' position in
+   lockstep. Per-keyframe animation-timing-function gives each phase
+   its own feel, same as the .caption transition pair: unfurl (0%→10%)
+   eases out gently; the fold (28%→50%) eases in, lingering before it
+   gathers speed, so it doesn't read as an abrupt snap. */
 .intro-veil.is-entering .intro-veil-text {
-  animation: intro-veil-text 6s cubic-bezier(0.45, 0, 0.4, 1) forwards;
+  animation: intro-veil-scroll 6s forwards;
 }
 
-@keyframes intro-veil-text {
-  0%   { opacity: 0; letter-spacing: 0.32em; }
-  10%  { opacity: 1; letter-spacing: 0.1em; }
-  28%  { opacity: 1; letter-spacing: 0.1em; }
-  50%  { opacity: 0; letter-spacing: 0.32em; }
-  100% { opacity: 0; letter-spacing: 0.32em; }
+.intro-veil.is-entering .intro-veil-text::before {
+  animation: intro-veil-scroll-cap-left 6s forwards;
+}
+
+.intro-veil.is-entering .intro-veil-text::after {
+  animation: intro-veil-scroll-cap-right 6s forwards;
+}
+
+@keyframes intro-veil-scroll {
+  0%   { clip-path: inset(0 50% 0 50%); animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  10%  { clip-path: inset(0 0 0 0); }
+  28%  { clip-path: inset(0 0 0 0); animation-timing-function: cubic-bezier(0.4, 0, 1, 1); }
+  50%  { clip-path: inset(0 50% 0 50%); }
+  100% { clip-path: inset(0 50% 0 50%); }
+}
+
+@keyframes intro-veil-scroll-cap-left {
+  0%   { left: calc(50% - 24px); animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  10%  { left: 0; }
+  28%  { left: 0; animation-timing-function: cubic-bezier(0.4, 0, 1, 1); }
+  50%  { left: calc(50% - 24px); }
+  100% { left: calc(50% - 24px); }
+}
+
+@keyframes intro-veil-scroll-cap-right {
+  0%   { right: calc(50% - 24px); animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  10%  { right: 0; }
+  28%  { right: 0; animation-timing-function: cubic-bezier(0.4, 0, 1, 1); }
+  50%  { right: calc(50% - 24px); }
+  100% { right: calc(50% - 24px); }
 }
 
 
@@ -987,8 +1057,6 @@ html, body {
   color: #3c2a16;
   text-align: center;
   text-shadow: 0 1px 0 rgba(255, 245, 220, 0.35);
-  opacity: 0;
-  transition: opacity 0.6s ease;
   pointer-events: none;
   /* left/right padding folds in the 48px the caps used to reserve as
      border-width, now that there's no border -- same total text inset
@@ -1002,6 +1070,31 @@ html, body {
   background-size: calc(100% - 80px) 100%;
   background-position: center;
   background-repeat: no-repeat;
+  /* Unfurl / fold motion: the box is always laid out at its full,
+     final width (width: max-content, sized the instant the text is
+     set) -- what animates is only how much of that width is
+     revealed. clip-path inset() with a 50%/50% pair at both left and
+     right collapses the visible area to a single line down the exact
+     horizontal center; animating those insets to 0 reveals the
+     parchment growing outward from that centerline in both
+     directions at once, like a rolled scroll opening. Because the
+     clip applies to the whole element, the text (a normal-flow child)
+     and the background fill are hidden/revealed together -- text
+     never appears before the parchment has expanded to make room for
+     it. The two roll-cap pseudo-elements below animate their own
+     left/right position in lockstep so they visually ride the
+     leading edge of the unfurl outward, then slide back together to
+     re-form the closed/rolled knot at center when hiding. This base
+     (unqualified) rule is what's in effect while .visible is being
+     REMOVED, so it also carries the "closing" (fold-up) transition
+     timing. Originally this was shorter/steeper than the opening one
+     below on the idea that a snap-shut would read differently from a
+     gentle unroll, but in practice that read as too abrupt -- so it's
+     now the same gentle, symmetric ease-out feel as opening, just
+     slightly longer, so folding closed feels unhurried rather than
+     rushed. */
+  clip-path: inset(0 50% 0 50%);
+  transition: clip-path 0.7s cubic-bezier(0.4, 0, 1, 1);
 }
 
 .caption::before,
@@ -1014,6 +1107,13 @@ html, body {
   background-image: url('assets/caption-scroll.png');
   background-repeat: no-repeat;
   pointer-events: none;
+  /* closed/rolled position: both caps centered on the same point at
+     the box's horizontal middle (48px wide, so 24px = half that),
+     stacked on top of each other -- reads as a single rolled knot.
+     Same closing-transition timing as the clip-path above, so the
+     caps slide back together in sync with the parchment folding in. */
+  transition: left 0.7s cubic-bezier(0.4, 0, 1, 1),
+              right 0.7s cubic-bezier(0.4, 0, 1, 1);
 }
 
 /* background-size width = (full source width 956px) scaled so that just
@@ -1022,19 +1122,41 @@ html, body {
    the pseudo-element clipped to 48px wide and background-position pinned
    to that edge, only that cap's slice ever shows. */
 .caption::before {
-  left: 0;
+  left: calc(50% - 24px);
   background-position: left top;
   background-size: 429px 100%;
 }
 
 .caption::after {
-  right: 0;
+  right: calc(50% - 24px);
   background-position: right top;
   background-size: 433px 100%;
 }
 
 .caption.visible {
-  opacity: 1;
+  /* open/unfurled position: insets pulled all the way out, so the
+     full parchment width (and the text inside it) is revealed.
+     Slightly longer + a gentle ease-out (no overshoot) than the
+     closing transition above, so the unroll reads as an unhurried
+     unfurl rather than a snap. This rule is what's in effect while
+     .visible is being ADDED, which is how CSS lets the two directions
+     of the same class toggle carry different transition timing. */
+  clip-path: inset(0 0 0 0);
+  transition: clip-path 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.caption.visible::before,
+.caption.visible::after {
+  transition: left 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+              right 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.caption.visible::before {
+  left: 0;
+}
+
+.caption.visible::after {
+  right: 0;
 }
 
 /* ============================================================

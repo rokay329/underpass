@@ -221,10 +221,18 @@ html, body {
 }
 
 /* ============================================================
-   Stage / scene — the artwork always fills 100% of the device
-   height (not a fixed capped size); width follows its own
-   aspect ratio, so it never crops or stretches.
-   ============================================================ */
+   Stage / scene — the artwork is built at its native 941x1672
+   pixel size (".scene") and scaled as a single rigid unit via a
+   JS-computed `transform: scale()` (see script.js, updateSceneScale)
+   instead of CSS viewport units. Every fx overlay inside .scene is
+   positioned as a % of that same never-changing 941x1672 box, so
+   nothing can ever drift relative to anything else -- the whole
+   tree scales up/down together as one GPU-composited unit no
+   matter how or when the viewport size changes (including Safari's
+   address bar sliding in/out, which was resizing 100dvh/100svh
+   mid-interaction and desyncing the fx overlays from the base art).
+   .scene-frame is a plain box JS sizes to match the *scaled*
+   footprint, purely so .stage's flexbox can center it correctly. */
 .stage {
   position: relative;
   display: flex;
@@ -236,15 +244,17 @@ html, body {
   padding: 0 12px;
 }
 
-.scene {
+.scene-frame {
   position: relative;
-  height: 100vh;
-  height: 100svh;
-  max-height: 100vh;
-  max-height: 100svh;
-  width: auto;
-  max-width: 100%;
-  aspect-ratio: 941 / 1672;
+}
+
+.scene {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 941px;
+  height: 1672px;
+  transform-origin: top left;
   box-shadow: 0 40px 120px -30px rgba(0, 0, 0, 0.85);
   overflow: hidden;
 }

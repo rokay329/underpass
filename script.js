@@ -11,6 +11,52 @@
   const sceneEl = document.getElementById('scene');
   let entered = false;
 
+  // ---------- scene scale: .scene is built at its native 941x1672px size
+  // and scaled as one rigid unit via `transform: scale()`, instead of
+  // relying on CSS viewport units (100vh/100dvh/100svh) to resize the box
+  // that everything else is positioned as a % of. This is what fixes the
+  // Safari-only bug where the fx overlays (fire, dog, etc.) would
+  // visually detach from the base art the moment Safari's address bar
+  // slid in/out mid-tap: with CSS viewport units, that resize changed
+  // .scene's actual box size, and its children (a big raster <img> vs.
+  // freshly-injected small fx <img>s, sometimes on different GPU
+  // compositing layers) didn't always repaint in sync during that resize.
+  // A `transform: scale()` composites the whole subtree as a single
+  // bitmap-like unit, so nothing inside it can ever drift relative to
+  // anything else, no matter how choppy or frequent the resize is. ----------
+  const sceneFrameEl = document.getElementById('sceneFrame');
+  const SCENE_W = 941;
+  const SCENE_H = 1672;
+  let sceneScaleRaf = null;
+
+  function updateSceneScale() {
+    if (!sceneEl || !sceneFrameEl) return;
+    const stageEl = sceneFrameEl.parentElement;
+    if (!stageEl) return;
+    const stageStyle = getComputedStyle(stageEl);
+    const padX = parseFloat(stageStyle.paddingLeft || '0') + parseFloat(stageStyle.paddingRight || '0');
+    const availW = stageEl.clientWidth - padX;
+    // visualViewport tracks the *actual* visible area on iOS Safari more
+    // reliably than window.innerHeight while the address bar is animating.
+    const availH = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    const scale = Math.max(0.01, Math.min(availH / SCENE_H, availW / SCENE_W));
+    sceneFrameEl.style.width = (SCENE_W * scale) + 'px';
+    sceneFrameEl.style.height = (SCENE_H * scale) + 'px';
+    sceneEl.style.transform = `scale(${scale})`;
+  }
+
+  function scheduleSceneScale() {
+    if (sceneScaleRaf) cancelAnimationFrame(sceneScaleRaf);
+    sceneScaleRaf = requestAnimationFrame(updateSceneScale);
+  }
+
+  updateSceneScale();
+  window.addEventListener('resize', scheduleSceneScale);
+  window.addEventListener('orientationchange', scheduleSceneScale);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', scheduleSceneScale);
+  }
+
   function enterScene() {
     if (entered) return;
     entered = true;

@@ -1,0 +1,683 @@
+/* ============================================================
+   Tokens
+   ============================================================ */
+:root {
+  --bg:            #05070a;
+  --panel-border:  rgba(255, 175, 110, 0.16);
+
+  --ember:         #ff7a3c;
+  --ember-strong:  #ff9d4d;
+  --ember-light:   #ffcf8a;
+
+  --twilight:      #33507e;
+  --star:          #eaf1ff;
+
+  --parchment:     #ece0c6;
+  --parchment-dim: #b9ab8c;
+
+  --moss:          #6d7c46;
+
+  --font-display: 'Silkscreen', monospace;
+  --font-story:   'EB Garamond', Georgia, serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+* { box-sizing: border-box; }
+
+/* ============================================================
+   Intro veil — a pitch-black overlay covering the whole screen
+   on load, fading away as if the viewer is stepping into a dark
+   space and their eyes are gradually adjusting to the campfire
+   light. Removed from the DOM once the animation finishes (see
+   script.js). Respects prefers-reduced-motion via the global
+   rule above (durations collapse to ~0, so it just disappears).
+   ============================================================ */
+.intro-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: radial-gradient(circle at 50% 46%, #050505 0%, #000 70%);
+  opacity: 1;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* the fade-out only starts once the viewer actually taps/clicks/presses
+   Enter to "enter" (see script.js) — this is also what guarantees the
+   entry chime fires in the same instant, since browsers only allow audio
+   to start on a real user gesture. Before that, everything here just
+   sits still. */
+.intro-veil.is-entering {
+  pointer-events: none;
+  cursor: default;
+  animation: intro-veil-fade 6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes intro-veil-fade {
+  0%   { opacity: 1; }
+  55%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.intro-veil-prompt {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  font-family: var(--font-story);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(14px, 2.2vw, 19px);
+  letter-spacing: 0.14em;
+  color: var(--parchment-dim);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+  animation: intro-prompt-breathe 2.6s ease-in-out infinite;
+}
+
+@keyframes intro-prompt-breathe {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 0.9; }
+}
+
+.intro-veil.is-entering .intro-veil-prompt {
+  display: none;
+}
+
+.intro-veil-text {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  font-family: var(--font-story);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(15px, 2.4vw, 21px);
+  letter-spacing: 0.1em;
+  color: var(--parchment);
+  text-shadow: 0 0 18px rgba(255, 158, 90, 0.32), 0 2px 12px rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+  opacity: 0;
+}
+
+/* its own gentle ease-in-out (not the veil's fast-start curve) so the
+   long fade-out reads as a slow dissolve rather than a sudden cutoff */
+.intro-veil.is-entering .intro-veil-text {
+  animation: intro-veil-text 6s cubic-bezier(0.45, 0, 0.4, 1) forwards;
+}
+
+@keyframes intro-veil-text {
+  0%   { opacity: 0; letter-spacing: 0.32em; }
+  10%  { opacity: 1; letter-spacing: 0.1em; }
+  28%  { opacity: 1; letter-spacing: 0.1em; }
+  50%  { opacity: 0; letter-spacing: 0.32em; }
+  100% { opacity: 0; letter-spacing: 0.32em; }
+}
+
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--parchment);
+  font-family: var(--font-story);
+  height: 100%;
+  overflow-x: hidden;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ember-light);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   Header (overlaid on top of the fullscreen scene, not in flow)
+   ============================================================ */
+.site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  padding: 16px 24px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+  align-items: center;
+  pointer-events: none;
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  color: var(--ember-light);
+  text-shadow: 0 0 12px rgba(255, 138, 61, 0.4);
+}
+
+.hint {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--parchment-dim);
+}
+
+/* ============================================================
+   BGM toggle — small fixed control, top-right corner
+   ============================================================ */
+.bgm-toggle {
+  position: fixed;
+  top: 14px;
+  right: 16px;
+  z-index: 6;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--panel-border);
+  background: rgba(10, 14, 20, 0.55);
+  backdrop-filter: blur(2px);
+  color: var(--parchment-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.bgm-toggle:hover {
+  transform: scale(1.06);
+}
+
+.bgm-toggle .bgm-icon {
+  font-size: 15px;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.bgm-toggle[aria-pressed="true"] {
+  border-color: rgba(255, 175, 110, 0.5);
+  color: var(--ember-light);
+}
+
+.bgm-toggle[aria-pressed="true"] .bgm-icon {
+  opacity: 1;
+  animation: bgm-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes bgm-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.18); }
+}
+
+/* ============================================================
+   Stage / scene — the artwork always fills 100% of the device
+   height (not a fixed capped size); width follows its own
+   aspect ratio, so it never crops or stretches.
+   ============================================================ */
+.stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 0 12px;
+}
+
+.scene {
+  position: relative;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  width: auto;
+  max-width: 100%;
+  aspect-ratio: 941 / 1672;
+  box-shadow: 0 40px 120px -30px rgba(0, 0, 0, 0.85);
+  overflow: hidden;
+}
+
+.scene-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  user-select: none;
+  -webkit-user-drag: none;
+  transform-origin: 50% 46%;
+  transform: scale(1.05);
+  filter: brightness(0.3) saturate(0.85);
+}
+
+.scene.is-entering .scene-img {
+  animation: scene-emerge 6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes scene-emerge {
+  0%   { transform: scale(1.05); filter: brightness(0.3) saturate(0.85); }
+  55%  { transform: scale(1.02); filter: brightness(0.32) saturate(0.85); }
+  100% { transform: scale(1); filter: brightness(1) saturate(1); }
+}
+
+/* ============================================================
+   Ambient flicker — a faint, irregular dimming/brightening layer
+   over the whole scene, like campfire light guttering, running
+   continuously (independent of the intro veil above). Kept very
+   subtle so it reads as atmosphere, not a strobe.
+   ============================================================ */
+.ambient-flicker {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: #000;
+  opacity: 0;
+  animation: ambient-flicker-a 17s ease-in-out infinite;
+}
+
+.ambient-flicker::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  animation: ambient-flicker-b 23s ease-in-out infinite;
+  animation-delay: -6s;
+}
+
+.ambient-flicker::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  animation: ambient-flicker-deep 41s ease-in-out infinite;
+  animation-delay: -17s;
+}
+
+@keyframes ambient-flicker-a {
+  0%    { opacity: 0; }
+  3%    { opacity: 0.11; }
+  5%    { opacity: 0.03; }
+  8%    { opacity: 0.17; }
+  11%   { opacity: 0.02; }
+  13%   { opacity: 0; }
+  47%   { opacity: 0; }
+  49.5% { opacity: 0.08; }
+  51%   { opacity: 0.01; }
+  54%   { opacity: 0.14; }
+  57%   { opacity: 0; }
+  81%   { opacity: 0; }
+  83%   { opacity: 0.06; }
+  84.5% { opacity: 0.16; }
+  87%   { opacity: 0.02; }
+  89%   { opacity: 0; }
+  100%  { opacity: 0; }
+}
+
+@keyframes ambient-flicker-b {
+  0%    { opacity: 0; }
+  22%   { opacity: 0; }
+  24%   { opacity: 0.09; }
+  26%   { opacity: 0.02; }
+  27.5% { opacity: 0.12; }
+  30%   { opacity: 0; }
+  63%   { opacity: 0; }
+  65%   { opacity: 0.15; }
+  67%   { opacity: 0.03; }
+  69%   { opacity: 0.07; }
+  71%   { opacity: 0; }
+  100%  { opacity: 0; }
+}
+
+/* rare, deeper "gust" dips — much darker than the base flicker, but
+   surfacing only occasionally so the darkening itself feels random */
+@keyframes ambient-flicker-deep {
+  0%    { opacity: 0; }
+  30%   { opacity: 0; }
+  31.5% { opacity: 0.3; }
+  33%   { opacity: 0.06; }
+  34.5% { opacity: 0.42; }
+  36.5% { opacity: 0.1; }
+  38%   { opacity: 0; }
+  68%   { opacity: 0; }
+  69.5% { opacity: 0.34; }
+  71%   { opacity: 0.05; }
+  72.5% { opacity: 0.22; }
+  74%   { opacity: 0; }
+  100%  { opacity: 0; }
+}
+
+/* ============================================================
+   Fireflies — small ambient dot particles drifting slowly over the
+   whole scene at rest (no interaction needed), like fireflies or loose
+   sparks catching the firelight. Randomized per-instance via inline
+   custom properties set in script.js: size, color, drift path,
+   twinkle timing. Purely decorative (pointer-events: none).
+   ============================================================ */
+.fireflies {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.firefly {
+  position: absolute;
+  border-radius: 50%;
+  animation-name: firefly-drift, firefly-twinkle;
+  animation-timing-function: ease-in-out, ease-in-out;
+  animation-iteration-count: infinite, infinite;
+}
+
+@keyframes firefly-drift {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(var(--dx1), var(--dy1)); }
+  50%  { transform: translate(var(--dx2), var(--dy2)); }
+  75%  { transform: translate(var(--dx3), var(--dy3)); }
+  100% { transform: translate(0, 0); }
+}
+
+/* asymmetric on purpose: a quick rise to peak, a brief hold, then a long
+   fade back down that (for some fireflies, see script.js) settles all the
+   way to fully invisible and stays gone for a while before the cycle
+   repeats — so a few of them genuinely vanish and reappear, not just dim */
+@keyframes firefly-twinkle {
+  0%   { opacity: var(--op-min); }
+  15%  { opacity: var(--op-max); }
+  35%  { opacity: var(--op-max); }
+  60%  { opacity: var(--op-min); }
+  100% { opacity: var(--op-min); }
+}
+
+/* keep them present but still (no motion trigger) for reduced-motion,
+   rather than letting the global rule collapse them into a single flash.
+   Uses a fixed, always-visible opacity here (NOT var(--op-min), which is
+   0 for the "vanishing" fireflies -- using it would leave those ones
+   permanently invisible for anyone with reduced motion on). */
+@media (prefers-reduced-motion: reduce) {
+  .firefly {
+    animation: none !important;
+    opacity: 0.5;
+  }
+}
+
+/* ============================================================
+   Milestone events — every hotspot has a bigger, rarer reaction on
+   a specific click count (the night sky's 10-click meteor shower
+   was the first of these; this section adds one for each of the
+   others, plus a scene-wide event for total interactions). All of
+   it reuses the existing GIF clips and CSS-only particles/glow —
+   no new artwork — so it stays consistent with the pixel-art set
+   already on the page.
+   ============================================================ */
+.milestone-glow {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.milestone-glow.pulse-warm {
+  background: radial-gradient(circle at 62% 58%, rgba(255, 170, 90, 0.35) 0%, rgba(255, 170, 90, 0) 60%);
+  animation: glow-warm-pulse 0.9s ease-out;
+}
+
+@keyframes glow-warm-pulse {
+  0%   { opacity: 0; }
+  25%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.milestone-glow.pulse-dawn {
+  background: linear-gradient(180deg, rgba(255, 196, 140, 0.22) 0%, rgba(255, 158, 90, 0.10) 45%, rgba(0, 0, 0, 0) 100%);
+  animation: glow-dawn-pulse 3.2s ease-in-out;
+}
+
+@keyframes glow-dawn-pulse {
+  0%   { opacity: 0; }
+  30%  { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.milestone-particles {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* fire (7th click): the flames get a brief, bigger surge, timed to the
+   fire clip's own length; transform-origin sits low so it grows up out
+   of the fire pit rather than from its own center */
+.fx--fire img {
+  transform-origin: 50% 88%;
+}
+
+.fx--fire.fx-milestone-pulse img {
+  animation: fire-milestone-scale 3.62s ease-out;
+}
+
+@keyframes fire-milestone-scale {
+  0%   { transform: scale(1); }
+  20%  { transform: scale(1.14); }
+  60%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+/* bed (8th click): a few "z"s drift up near the pillow while the blanket
+   settles, reusing the display font already loaded for the wordmark */
+.zzz {
+  position: absolute;
+  font-family: var(--font-display);
+  color: var(--parchment);
+  text-shadow: 0 0 6px rgba(255, 207, 138, 0.6);
+  pointer-events: none;
+  opacity: 0;
+  animation-name: zzz-float;
+  animation-duration: 2.2s;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
+@keyframes zzz-float {
+  0%   { opacity: 0; transform: translate(0, 0) rotate(-6deg); }
+  15%  { opacity: 0.85; }
+  75%  { opacity: 0.7; }
+  100% { opacity: 0; transform: translate(6px, -34px) rotate(4deg); }
+}
+
+/* lantern (9th click): the flame briefly turns an unexpected color and
+   settles back, timed to the lantern clip's own length */
+.fx--lantern.fx-milestone-hue img {
+  animation: lantern-hue-shift 2.4s ease-in-out;
+}
+
+@keyframes lantern-hue-shift {
+  0%   { filter: hue-rotate(0deg) saturate(1); }
+  35%  { filter: hue-rotate(140deg) saturate(1.4); }
+  70%  { filter: hue-rotate(140deg) saturate(1.4); }
+  100% { filter: hue-rotate(0deg) saturate(1); }
+}
+
+/* tarp (5th click): a handful of small leaf/dust flecks blow across along
+   with the stronger gust, drifting rightward and tumbling as they fade */
+.leaf {
+  position: absolute;
+  width: 5px;
+  height: 3px;
+  border-radius: 60% 40% 60% 40%;
+  pointer-events: none;
+  opacity: 0;
+  animation-name: leaf-drift;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
+@keyframes leaf-drift {
+  0%   { opacity: 0; transform: translate(0, 0) rotate(0deg); }
+  12%  { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(var(--leaf-dx), var(--leaf-dy)) rotate(var(--leaf-rot)); }
+}
+
+/* ============================================================
+   Hotspots
+   ============================================================ */
+.hotspot {
+  position: absolute;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* touch-target hint dots are hidden -- the scene reads better without
+   visible markers pointing at every interactive spot */
+.hotspot-dot {
+  display: none;
+}
+
+.hotspot:hover .hotspot-dot,
+.hotspot:focus-visible .hotspot-dot {
+  opacity: 1;
+  transform: scale(1.35);
+}
+
+.hotspot:active .hotspot-dot {
+  transform: scale(0.9);
+}
+
+@keyframes dot-breathe {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.85; }
+}
+
+/* stagger the breathing so the four markers don't pulse in lockstep */
+.hotspot--bed     .hotspot-dot { animation-delay: 0.6s; }
+.hotspot--night   .hotspot-dot { animation-delay: 1.3s; }
+.hotspot--puddle  .hotspot-dot { animation-delay: 2.0s; }
+.hotspot--lantern .hotspot-dot { animation-delay: 2.6s; }
+.hotspot--tarp    .hotspot-dot { animation-delay: 1.8s; }
+.hotspot--dog     .hotspot-dot { animation-delay: 0.9s; }
+
+/* ============================================================
+   FX containers — each holds one real animated GIF (injected by
+   script.js), sized to match that GIF's own crop exactly. No
+   CSS-drawn shapes here: the artwork itself is the animation.
+   ============================================================ */
+.fx {
+  position: absolute;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.fx img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.fx img.shown {
+  opacity: 1;
+}
+
+/* the shooting star reads a little better sitting slightly up and to
+   the right within its sky crop, rather than dead-center; only affects
+   the plain single-star clip -- the meteor shower's own scattered stars
+   set their own inline transform per star, which overrides this */
+.fx--night img {
+  transform: translate(3%, -6%);
+}
+
+/* the dog reaction clips (ears-perk, bark) only redraw a small patch of
+   fur -- ears, forehead, sometimes the chest -- rather than the whole
+   crop, and that patch's hard alpha edge doesn't quite match the softer
+   silhouette of the resting dog underneath, which can read as a slight
+   dent right at the boundary. A wide, mostly-opaque radial fade keeps
+   the actual artwork (ears/heart/mouth, which stay well inside this
+   zone) untouched while feathering the outer edge of the overlay so it
+   blends into the base art instead of ending in a hard rectangle. */
+.fx--dog img {
+  mask-image: radial-gradient(ellipse 62% 68% at 56% 30%, #000 65%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 62% 68% at 56% 30%, #000 65%, transparent 100%);
+}
+
+
+/* ============================================================
+   Caption — overlaid near the bottom of the scene instead of
+   sitting in flow, so it never adds extra page height.
+   ============================================================ */
+.caption {
+  position: absolute;
+  left: 50%;
+  bottom: 7%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 86%;
+  font-family: var(--font-story);
+  font-style: italic;
+  font-size: clamp(12px, 2.6vw, 16px);
+  color: var(--parchment);
+  text-align: center;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9), 0 0 4px rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+}
+
+.caption.visible {
+  opacity: 1;
+}
+
+/* ============================================================
+   Footer (overlaid at the bottom, not in flow)
+   ============================================================ */
+.site-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  padding: 8px 20px 12px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.site-footer p {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: rgba(185, 171, 140, 0.55);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+}
+
+/* the scene sizes itself by height everywhere (see .scene above);
+   no separate narrow-screen override needed since aspect-ratio +
+   max-width:100% already keeps it from overflowing sideways. */

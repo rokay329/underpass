@@ -937,7 +937,41 @@ html, body {
 
 /* ============================================================
    Caption — overlaid near the bottom of the scene instead of
-   sitting in flow, so it never adds extra page height.
+   sitting in flow, so it never adds extra page height. Backed by
+   an unfurled-parchment scroll graphic, sized larger than the first
+   pass (bigger roll caps, more padding) so there's generous empty
+   parchment around the text on every side, not just enough room to
+   fit it. Its edges are softly anti-aliased rather than hard pixel
+   snapped, so this uses normal (smooth) image-rendering, unlike the
+   hand-drawn dot-art assets elsewhere on the page.
+
+   This does NOT use border-image (the first few passes did). Border-
+   image slices the source into non-overlapping regions -- a fixed
+   cap slice and a stretched fill slice -- rasterized independently,
+   and different browsers/box widths can round that internal seam
+   to a slightly different subpixel boundary, occasionally leaving a
+   hairline transparent gap exactly at the cap/fill join (worse at
+   some caption lengths than others, which is why it came and went).
+   A background-color/texture patched in behind that one seam only
+   ever covered half the problem, since the gap could land on either
+   side of the join.
+
+   Instead: assets/caption-scroll-fill.png (just the stretchy paper
+   middle, no caps) is one continuous background with no internal
+   partition, so there's no seam within IT to round badly. It's inset
+   40px from each edge (not the full width -- see note below) and the
+   two roll caps (assets/caption-scroll.png, via ::before/::after,
+   48px wide) sit on top at the very left/right edges, overlapping the
+   fill's outer 8px. Any subpixel rounding at that overlap just shows
+   more of one warm paper layer or the other, never a gap down to the
+   dark scene. The fill deliberately does NOT reach all the way to the
+   box's outer edge: the roll art tapers narrower than its own 48px
+   slice at the very top/bottom (the ball-finial ends), so a fill that
+   spans full box height out to x=0 would square-edge past that curve
+   and visibly stick out beyond the roll's silhouette at the corners
+   -- insetting it keeps it fully hidden under the roll everywhere the
+   roll is actually narrower than 48px, while still reaching well past
+   the true seam at x=48 for the overlap.
    ============================================================ */
 .caption {
   position: absolute;
@@ -946,15 +980,57 @@ html, body {
   transform: translateX(-50%);
   width: max-content;
   max-width: 86%;
+  box-sizing: border-box;
   font-family: var(--font-story);
   font-style: italic;
   font-size: clamp(12px, 2.6vw, 16px);
-  color: var(--parchment);
+  color: #3c2a16;
   text-align: center;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9), 0 0 4px rgba(0, 0, 0, 0.9);
+  text-shadow: 0 1px 0 rgba(255, 245, 220, 0.35);
   opacity: 0;
   transition: opacity 0.6s ease;
   pointer-events: none;
+  /* left/right padding folds in the 48px the caps used to reserve as
+     border-width, now that there's no border -- same total text inset
+     as before. top > bottom on purpose (see note above): more space
+     stays above the text than below it, so it sits visually centered
+     against the parchment rather than looking pushed up. */
+  padding: 1.48em calc(48px + 1.3em) 1.2em;
+  background-image: url('assets/caption-scroll-fill.png');
+  /* inset 40px each side (8px short of the 48px cap width) instead of
+     100% -- see the note above for why this can't just span edge to edge. */
+  background-size: calc(100% - 80px) 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.caption::before,
+.caption::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 48px;
+  background-image: url('assets/caption-scroll.png');
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+/* background-size width = (full source width 956px) scaled so that just
+   the cap's own native slice (left 107px / right 106px -- this source
+   isn't perfectly symmetric) maps to the 48px rendered cap width; with
+   the pseudo-element clipped to 48px wide and background-position pinned
+   to that edge, only that cap's slice ever shows. */
+.caption::before {
+  left: 0;
+  background-position: left top;
+  background-size: 429px 100%;
+}
+
+.caption::after {
+  right: 0;
+  background-position: right top;
+  background-size: 433px 100%;
 }
 
 .caption.visible {

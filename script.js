@@ -35,10 +35,15 @@
     if (!stageEl) return;
     const stageStyle = getComputedStyle(stageEl);
     const padX = parseFloat(stageStyle.paddingLeft || '0') + parseFloat(stageStyle.paddingRight || '0');
-    const availW = stageEl.clientWidth - padX;
-    // visualViewport tracks the *actual* visible area on iOS Safari more
-    // reliably than window.innerHeight while the address bar is animating.
-    const availH = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    // Deliberately window.innerWidth/innerHeight (the LAYOUT viewport) here,
+    // never window.visualViewport. The layout viewport stays put through
+    // both Safari's address-bar show/hide *and* pinch-zoom -- only the
+    // visual viewport shrinks for those. Driving this off visualViewport
+    // was actively fighting pinch-zoom (zooming in shrinks visualViewport,
+    // which made this function shrink the scene back down to "compensate",
+    // so the page never appeared to zoom at all, just gained empty margin).
+    const availW = window.innerWidth - padX;
+    const availH = window.innerHeight;
     const scale = Math.max(0.01, Math.min(availH / SCENE_H, availW / SCENE_W));
     sceneFrameEl.style.width = (SCENE_W * scale) + 'px';
     sceneFrameEl.style.height = (SCENE_H * scale) + 'px';
@@ -53,9 +58,6 @@
   updateSceneScale();
   window.addEventListener('resize', scheduleSceneScale);
   window.addEventListener('orientationchange', scheduleSceneScale);
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', scheduleSceneScale);
-  }
 
   function enterScene() {
     if (entered) return;

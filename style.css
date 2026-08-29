@@ -107,16 +107,6 @@
   transform: translate(-50%, -50%);
   margin: 0;
   width: max-content;
-}
-
-/* Same split as .caption/.caption-fill (see the big note over there):
-   the parchment fill + text sit in this inner span so the clip-path
-   that hides/reveals them doesn't also clip the roll-cap
-   pseudo-elements declared below on the outer .intro-veil-text --
-   otherwise the caps get progressively sliced by the same shrinking
-   clip window instead of staying whole while they slide/fade. */
-.intro-veil-text-fill {
-  display: inline-block;
   box-sizing: border-box;
   font-family: var(--font-story);
   font-style: italic;
@@ -133,13 +123,8 @@
   background-position: center;
   background-repeat: no-repeat;
   /* closed by default -- clipped to a zero-width line at the
-     horizontal center, same as .caption-fill's resting state.
-     opacity starts at 0 too (see the keyframes below for why: it
-     fades in/out slightly faster than the clip opens/closes, so
-     there's no moment where a narrow, still-mostly-clipped sliver of
-     text is faintly legible on its own). */
+     horizontal center, same as .caption's resting state */
   clip-path: inset(0 50% 0 50%);
-  opacity: 0;
 }
 
 .intro-veil-text::before,
@@ -152,9 +137,6 @@
   background-image: url('assets/caption-scroll.png');
   background-repeat: no-repeat;
   pointer-events: none;
-  /* hidden (not clipped -- see the note above) until the animation
-     below opens it */
-  opacity: 0;
 }
 
 .intro-veil-text::before {
@@ -169,34 +151,15 @@
   background-size: 433px 100%;
 }
 
-/* Single keyframe animation per piece (not a class-toggle transition,
-   since this runs once on a fixed timeline alongside the rest of the
-   intro sequence), matching the .caption/.caption-fill choreography:
-   the fill unrolls/rolls up while the caps fly out to the edges and
-   back independently, timed so the caps are the last thing left on
-   screen when it closes rather than getting clipped away together
-   with the parchment. Per-keyframe animation-timing-function gives
-   each phase its own feel: unfurl (0%→10%) eases out gently; the fold
-   eases in, lingering before it gathers speed, so it doesn't read as
-   an abrupt snap.
-
-   Timeline (of the shared 6s intro sequence): opens 0%→10%, holds
-   open to 28%, then the fill finishes retracting by 38% while the
-   caps stay put and fully visible -- only from 38%→50% do the caps
-   themselves slide back to center and fade out, so there's a beat
-   where just the two end caps are left on screen with the parchment
-   already gone, exactly mirroring how .caption closes.
-
-   The fill's own opacity keyframes (below) fade it in/out slightly
-   faster than its clip-path opens/closes (done by 8% / done by 34%,
-   vs. the clip finishing at 10% / 38%) for the same reason as
-   .caption-fill: without it, the last moment of the clip window
-   shrinking to nothing leaves a small legible fragment of text
-   floating alone, disconnected from the (already stationary, fully
-   open) caps -- it read as the scroll tearing rather than folding
-   shut. */
-.intro-veil.is-entering .intro-veil-text-fill {
-  animation: intro-veil-scroll-fill 6s forwards;
+/* Single keyframe animation (not a class-toggle transition, since
+   this runs once on a fixed timeline alongside the rest of the intro
+   sequence) driving the box's clip-path and both caps' position in
+   lockstep. Per-keyframe animation-timing-function gives each phase
+   its own feel, same as the .caption transition pair: unfurl (0%→10%)
+   eases out gently; the fold (28%→50%) eases in, lingering before it
+   gathers speed, so it doesn't read as an abrupt snap. */
+.intro-veil.is-entering .intro-veil-text {
+  animation: intro-veil-scroll 6s forwards;
 }
 
 .intro-veil.is-entering .intro-veil-text::before {
@@ -207,30 +170,28 @@
   animation: intro-veil-scroll-cap-right 6s forwards;
 }
 
-@keyframes intro-veil-scroll-fill {
-  0%   { clip-path: inset(0 50% 0 50%); opacity: 0; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
-  8%   { opacity: 1; }
+@keyframes intro-veil-scroll {
+  0%   { clip-path: inset(0 50% 0 50%); animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
   10%  { clip-path: inset(0 0 0 0); }
-  28%  { clip-path: inset(0 0 0 0); opacity: 1; animation-timing-function: cubic-bezier(0.4, 0, 1, 1); }
-  34%  { opacity: 0; }
-  38%  { clip-path: inset(0 50% 0 50%); }
-  100% { clip-path: inset(0 50% 0 50%); opacity: 0; }
+  28%  { clip-path: inset(0 0 0 0); animation-timing-function: cubic-bezier(0.4, 0, 1, 1); }
+  50%  { clip-path: inset(0 50% 0 50%); }
+  100% { clip-path: inset(0 50% 0 50%); }
 }
 
 @keyframes intro-veil-scroll-cap-left {
-  0%   { left: calc(50% - 24px); opacity: 0; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
-  10%  { left: 0; opacity: 1; }
-  38%  { left: 0; opacity: 1; animation-timing-function: cubic-bezier(0.4, 0, 1, 1); }
-  50%  { left: calc(50% - 24px); opacity: 0; }
-  100% { left: calc(50% - 24px); opacity: 0; }
+  0%   { left: calc(50% - 24px); animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  10%  { left: 0; }
+  28%  { left: 0; animation-timing-function: cubic-bezier(0.4, 0, 1, 1); }
+  50%  { left: calc(50% - 24px); }
+  100% { left: calc(50% - 24px); }
 }
 
 @keyframes intro-veil-scroll-cap-right {
-  0%   { right: calc(50% - 24px); opacity: 0; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
-  10%  { right: 0; opacity: 1; }
-  38%  { right: 0; opacity: 1; animation-timing-function: cubic-bezier(0.4, 0, 1, 1); }
-  50%  { right: calc(50% - 24px); opacity: 0; }
-  100% { right: calc(50% - 24px); opacity: 0; }
+  0%   { right: calc(50% - 24px); animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+  10%  { right: 0; }
+  28%  { right: 0; animation-timing-function: cubic-bezier(0.4, 0, 1, 1); }
+  50%  { right: calc(50% - 24px); }
+  100% { right: calc(50% - 24px); }
 }
 
 
@@ -1089,22 +1050,6 @@ html, body {
   transform: translateX(-50%);
   width: max-content;
   max-width: 86%;
-  pointer-events: none;
-}
-
-/* The parchment fill + text live in this inner span now, separate
-   from .caption itself, specifically so the clip-path animation below
-   (which hides/reveals the fill+text by clipping) does NOT also clip
-   the two roll-cap pseudo-elements declared further down on .caption.
-   Previously caps and fill shared one clip-path, so as the clip
-   window shrank toward center the caps got progressively sliced off
-   mid-motion -- they never got to just slide closed intact, they
-   visibly lost width to the clip edge, which read as the scroll
-   being "cut off" rather than rolling shut. Splitting them apart lets
-   the caps animate purely via position + opacity, staying crisp and
-   whole the entire time. */
-.caption-fill {
-  display: inline-block;
   box-sizing: border-box;
   font-family: var(--font-story);
   font-style: italic;
@@ -1112,6 +1057,7 @@ html, body {
   color: #3c2a16;
   text-align: center;
   text-shadow: 0 1px 0 rgba(255, 245, 220, 0.35);
+  pointer-events: none;
   /* left/right padding folds in the 48px the caps used to reserve as
      border-width, now that there's no border -- same total text inset
      as before. top > bottom on purpose (see note above): more space
@@ -1124,33 +1070,31 @@ html, body {
   background-size: calc(100% - 80px) 100%;
   background-position: center;
   background-repeat: no-repeat;
-  /* Unfurl / fold motion: this box is always laid out at its full,
-     final width (an inline-block sized to its own content, set the
-     instant the text is set) -- what animates is only how much of
-     that width is revealed. clip-path inset() with a 50%/50% pair at
-     both left and right collapses the visible area to a single line
-     down the exact horizontal center; animating those insets to 0
-     reveals the parchment growing outward from that centerline in
-     both directions at once. This is the "closing" (fold-up)
-     timing -- see .caption.visible .caption-fill below for opening.
-     It finishes closing well before the caps do (see the caps'
-     transition-delay below), so the parchment retracts to nothing
-     first while the caps hang back a moment longer.
-
-     opacity fades out alongside the clip, but on a shorter duration
-     (0.28s vs 0.45s) so it reaches 0 before the clip window has
-     fully closed. Without this, the last sliver of the shrinking
-     clip window -- right before it collapses to nothing -- shows a
-     small, still-legible fragment of text with a bit of parchment
-     around it, floating alone with a visible gap to the (already
-     fully open, unmoving at this point) roll caps on both sides. It
-     read like the scroll had torn apart rather than folded shut.
-     Fading it out first means it dissolves into the dark scene
-     before that orphaned-fragment moment would otherwise show. */
+  /* Unfurl / fold motion: the box is always laid out at its full,
+     final width (width: max-content, sized the instant the text is
+     set) -- what animates is only how much of that width is
+     revealed. clip-path inset() with a 50%/50% pair at both left and
+     right collapses the visible area to a single line down the exact
+     horizontal center; animating those insets to 0 reveals the
+     parchment growing outward from that centerline in both
+     directions at once, like a rolled scroll opening. Because the
+     clip applies to the whole element, the text (a normal-flow child)
+     and the background fill are hidden/revealed together -- text
+     never appears before the parchment has expanded to make room for
+     it. The two roll-cap pseudo-elements below animate their own
+     left/right position in lockstep so they visually ride the
+     leading edge of the unfurl outward, then slide back together to
+     re-form the closed/rolled knot at center when hiding. This base
+     (unqualified) rule is what's in effect while .visible is being
+     REMOVED, so it also carries the "closing" (fold-up) transition
+     timing. Originally this was shorter/steeper than the opening one
+     below on the idea that a snap-shut would read differently from a
+     gentle unroll, but in practice that read as too abrupt -- so it's
+     now the same gentle, symmetric ease-out feel as opening, just
+     slightly longer, so folding closed feels unhurried rather than
+     rushed. */
   clip-path: inset(0 50% 0 50%);
-  opacity: 0;
-  transition: clip-path 0.45s cubic-bezier(0.4, 0, 1, 1),
-              opacity 0.28s cubic-bezier(0.4, 0, 1, 1);
+  transition: clip-path 0.7s cubic-bezier(0.4, 0, 1, 1);
 }
 
 .caption::before,
@@ -1163,22 +1107,13 @@ html, body {
   background-image: url('assets/caption-scroll.png');
   background-repeat: no-repeat;
   pointer-events: none;
-  /* Closed/hidden resting state: parked at the box's horizontal
-     middle (48px wide, so 24px = half that -- both caps land on the
-     same point, stacked) and fully transparent, since -- unlike
-     before -- nothing clips them away anymore; opacity is now what
-     hides them when idle. The transition-delay is the whole point of
-     this rework: while .visible is being removed (closing), the caps
-     don't start moving/fading until 0.35s in -- by which point
-     .caption-fill above (0.45s duration, no delay) is most of the way
-     through retracting. So the sequence reads as: parchment folds
-     away first, then a beat later the two end caps slide in and fade
-     out together, making them the last thing on screen rather than
-     getting chopped by a shared clip the whole time. */
-  opacity: 0;
-  transition: left 0.3s cubic-bezier(0.4, 0, 1, 1) 0.35s,
-              right 0.3s cubic-bezier(0.4, 0, 1, 1) 0.35s,
-              opacity 0.3s cubic-bezier(0.4, 0, 1, 1) 0.35s;
+  /* closed/rolled position: both caps centered on the same point at
+     the box's horizontal middle (48px wide, so 24px = half that),
+     stacked on top of each other -- reads as a single rolled knot.
+     Same closing-transition timing as the clip-path above, so the
+     caps slide back together in sync with the parchment folding in. */
+  transition: left 0.7s cubic-bezier(0.4, 0, 1, 1),
+              right 0.7s cubic-bezier(0.4, 0, 1, 1);
 }
 
 /* background-size width = (full source width 956px) scaled so that just
@@ -1198,30 +1133,22 @@ html, body {
   background-size: 433px 100%;
 }
 
-.caption.visible .caption-fill {
+.caption.visible {
   /* open/unfurled position: insets pulled all the way out, so the
-     full parchment width (and the text inside it) is revealed. This
-     rule is what's in effect while .visible is being ADDED (opening);
-     no delay, starts immediately. Opacity reaches 1 quickly (0.2s,
-     well before the 0.5s clip finishes widening) for the same reason
-     as the closing fade below -- so there's no early moment where a
-     narrow, still-mostly-clipped sliver of text is faintly legible
-     before the parchment has properly widened around it. */
+     full parchment width (and the text inside it) is revealed.
+     Slightly longer + a gentle ease-out (no overshoot) than the
+     closing transition above, so the unroll reads as an unhurried
+     unfurl rather than a snap. This rule is what's in effect while
+     .visible is being ADDED, which is how CSS lets the two directions
+     of the same class toggle carry different transition timing. */
   clip-path: inset(0 0 0 0);
-  opacity: 1;
-  transition: clip-path 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: clip-path 0.55s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .caption.visible::before,
 .caption.visible::after {
-  /* Opening: caps fly out to the edges and fade in right away (no
-     delay) -- they lead the motion, with the parchment unrolling
-     to fill the gap behind them (see .caption-fill above). */
-  opacity: 1;
-  transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-              right 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: left 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+              right 0.55s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .caption.visible::before {

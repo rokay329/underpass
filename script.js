@@ -278,7 +278,6 @@
   })();
 
   const caption = document.getElementById('caption');
-  const captionFill = document.getElementById('captionFill');
 
   const FX = {
     fire:    { el: document.getElementById('fxFire'),    src: 'assets/fx-fire.gif',    frames: 32, delay: 110 },
@@ -326,7 +325,7 @@
   let captionTimer = null;
   function showCaption(text, holdMs = 2400) {
     clearTimeout(captionTimer);
-    captionFill.textContent = text;
+    caption.textContent = text;
     caption.classList.remove('visible');
     void caption.offsetWidth;
     caption.classList.add('visible');

@@ -857,6 +857,56 @@ html, body {
 .hotspot--dog     .hotspot-dot { animation-delay: 0.9s; }
 
 /* ============================================================
+   Wall frame — a purely decorative wooden picture frame hung on the
+   right-hand brick wall, with a fixed caption (no interaction, no
+   storage -- editing the text later is just a one-line change to
+   .wall-frame-text's content in index.html). This frame artwork is
+   drawn front-on (no 3D tilt) with its dark chalkboard fill already
+   baked into the image, so .wall-frame-plate just positions the text
+   over that painted board (percentages measured from the art's own
+   pixel bounds) -- no perspective transform needed here, unlike the
+   earlier tilted frame asset. The text itself gets a chalk-dust look
+   via the #chalk-filter SVG filter (fractal noise masked to the
+   glyph shapes, plus a slight edge displacement). */
+.wall-frame {
+  position: absolute;
+  pointer-events: none;
+}
+
+.wall-frame-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+}
+
+.wall-frame-plate {
+  position: absolute;
+  left: 12.77%;
+  top: 43.17%;
+  width: 68.79%;
+  height: 38.85%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.wall-frame-text {
+  display: inline-block;
+  font-family: var(--font-story), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #f3f2e8;
+  text-align: center;
+  line-height: 1.15;
+  padding: 2px 5px;
+  transform: rotate(-3deg);
+  filter: url('#chalk-filter');
+}
+
+/* ============================================================
    FX containers — each holds one real animated GIF (injected by
    script.js), sized to match that GIF's own crop exactly. No
    CSS-drawn shapes here: the artwork itself is the animation.

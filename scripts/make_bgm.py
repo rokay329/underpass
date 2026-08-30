@@ -87,6 +87,19 @@ fade_in = np.linspace(0, 1, xf)
 fade_out = 1 - fade_in
 mix[-xf:] = tail * fade_out + head * fade_in
 
+# subtle fade-in/out right at the loop boundary itself (on top of the
+# crossfade above): the crossfade blends the *musical* content so nothing
+# clips or lurches at the seam, but its two ends still don't land on
+# exactly the same sample value, so <audio loop> can still leave the
+# faintest click at the wrap. Ducking both edges down to true silence
+# over a short window removes that possibility outright -- silence
+# meeting silence is seamless no matter what.
+edge_fade_n = int(SR * 0.15)
+edge_in = np.linspace(0, 1, edge_fade_n) ** 1.5
+edge_out = np.linspace(1, 0, edge_fade_n) ** 1.5
+mix[:edge_fade_n] *= edge_in
+mix[-edge_fade_n:] *= edge_out
+
 # normalize to a gentle, background-appropriate level (well below clipping)
 peak = np.max(np.abs(mix))
 mix = mix / peak * 0.5

@@ -714,9 +714,26 @@
     });
   });
 
-  // ---------- background music toggle ----------
+  // ---------- background music: track picker + play/pause toggle ----------
   const bgmAudio = document.getElementById('bgmAudio');
   const bgmToggle = document.getElementById('bgmToggle');
+  const bgmTrackToggle = document.getElementById('bgmTrackToggle');
+  const bgmTrackLabel = document.getElementById('bgmTrackLabel');
+
+  // Two selectable loops: the original calmer one, and a slower, warmer,
+  // more drowsy/cozy one (assets/bgm-cozy.mp3, see scripts/make_bgm_cozy.py).
+  // bgmTrackToggle just cycles which of these bgmAudio.src points at --
+  // the play/pause button above is what actually starts/stops it.
+  // English titles (kept short/poetic rather than plainly descriptive)
+  // paired with a Korean caption line in the same voice as the rest of
+  // the piece's flavor text -- not "switched to the X version" but a
+  // small image, same as clicking any hotspot.
+  const BGM_TRACKS = [
+    { src: 'assets/bgm.mp3',       label: 'Firelight',   caption: '모닥불이 나지막이, 다정하게 타오릅니다.' },
+    { src: 'assets/bgm-cozy.mp3',  label: 'Half-Asleep', caption: '노곤한 선율에 눈꺼풀이 자꾸 감기고, 기분 좋은 바람 소리가 살며시 귓가를 스칩니다.' },
+    { src: 'assets/bgm-faint.mp3', label: 'Faint Wind',  caption: '바람이 거세지만, 이 작은 공간은 변함없이 포근하고 안전합니다.' },
+  ];
+  let bgmTrackIndex = 0;
 
   if (bgmAudio && bgmToggle) {
     bgmAudio.volume = 0.55;
@@ -733,6 +750,37 @@
         bgmToggle.setAttribute('aria-pressed', 'false');
         bgmToggle.setAttribute('aria-label', '배경음악 켜기');
       }
+    });
+  }
+
+  if (bgmAudio && bgmTrackToggle && bgmTrackLabel) {
+    bgmTrackToggle.addEventListener('click', () => {
+      bgmTrackIndex = (bgmTrackIndex + 1) % BGM_TRACKS.length;
+      const track = BGM_TRACKS[bgmTrackIndex];
+      const wasPlaying = !bgmAudio.paused;
+
+      bgmAudio.src = track.src;
+      bgmAudio.load();
+      if (wasPlaying) {
+        // keep the music going without a gap, just on the new loop --
+        // this still counts as continuing an already-user-started
+        // playback, not a fresh autoplay, so browsers allow it here.
+        bgmAudio.play().catch(() => {});
+      }
+
+      bgmTrackLabel.textContent = track.label;
+      const nextTrack = BGM_TRACKS[(bgmTrackIndex + 1) % BGM_TRACKS.length];
+      // "트랙" (track) as the Korean noun the particles attach to, since
+      // the labels themselves are now English titles (Firelight,
+      // Half-Asleep, ...) and don't take Korean particles gracefully.
+      bgmTrackToggle.setAttribute(
+        'aria-label',
+        `배경음악: ${track.label} 트랙 ${wasPlaying ? '재생 중' : '선택됨'} (누르면 ${nextTrack.label} 트랙으로 전환)`
+      );
+      // the two updated captions below run a bit longer than the
+      // original one-clause version, so give them more time on screen
+      // (matches the milestone captions' 3200-3600ms hold for similar length).
+      showCaption(track.caption, 3400);
     });
   }
 })();

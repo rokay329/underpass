@@ -13,7 +13,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/favicon/android-chrome-192x192.png">
 <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon/apple-touch-icon.png">
-<link rel="stylesheet" href="style.css?v=20260830-7">
+<link rel="stylesheet" href="style.css?v=20260830-21">
 </head>
 <body>
 
@@ -34,6 +34,27 @@
     <div class="scene-frame" id="sceneFrame">
     <div class="scene" id="scene">
       <img class="scene-img" id="sceneImg" src="assets/scene.png" alt="돌 아치 아래, 강이 내려다보이는 야영지 — 모닥불과 캠핑 침대, 그 옆에 앉아있는 강아지 쿤이가 있는 밤 풍경" width="941" height="1672">
+
+      <!-- static figure layer: positioned to match the source PSD's
+           layer bbox exactly (561,930)-(798,1198) on the 941x1672
+           canvas, converted to percentages. Sits above the base
+           scene-img but below the fire-glow/ambient-flicker overlays
+           below so the firelight still visually washes over her. Not
+           baked into scene.png (unlike the dog/basket) so her position
+           stays easy to nudge later without touching the master
+           background asset. -->
+      <div class="scene-figure" id="figureWoman" role="button" tabindex="0" aria-label="침대에 걸터앉다" style="left:59.617%; top:55.622%; width:25.186%; height:16.029%;">
+        <!-- split into two layers so only the shoulders-up part moves on
+             click (see #figureWomanHead's .settle animation in style.css)
+             while the lower body stays perfectly still -- the base layer
+             is the FULL woman image (not just the lower-body crop), so
+             the head layer moving never has any chance of revealing a
+             gap no matter how far it shifts; the head crop on top simply
+             covers/replaces the same region of the full image at rest. -->
+        <img class="figure-layer figure-layer--body" src="assets/woman-full.png" alt="" style="left:0%; top:0%; width:98.734%; height:100%;">
+        <img class="figure-layer figure-layer--head" id="figureWomanHead" src="assets/woman-head.png" alt="담요를 두르고 모닥불을 바라보며 침대에 걸터앉은 여성" style="left:39.662%; top:0%; width:52.321%; height:76.119%;">
+      </div>
+
       <div class="ambient-flicker" aria-hidden="true"></div>
       <div class="water-shimmer" aria-hidden="true"></div>
       <div class="city-lights" id="cityLights" aria-hidden="true"></div>
@@ -100,6 +121,6 @@
     <p>모닥불 · 침대 · 밤하늘 · 물웅덩이 · 랜턴 · 천막 자락 · 쿤이 — 일곱 곳을 모두 눌러보세요.</p>
   </footer>
 
-  <script src="script.js?v=20260830-5"></script>
+  <script src="script.js?v=20260830-16"></script>
 </body>
 </html>

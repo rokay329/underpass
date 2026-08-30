@@ -11,6 +11,18 @@
   const sceneEl = document.getElementById('scene');
   let entered = false;
 
+  // ---------- whether the woman is here at all is decided once, randomly,
+  // on every visit: when she isn't, the bed keeps its original "lie down
+  // and sleep" zzz FX; when she is, the bed (and she herself) instead
+  // trigger her "watching the view" reaction. See the target === 'bed'
+  // branch and triggerBedRest() below, and the figureWoman click wiring
+  // near the hotspot listeners. ----------
+  const WOMAN_PRESENT = Math.random() < 0.5;
+  if (!WOMAN_PRESENT) {
+    const figureWomanEl = document.getElementById('figureWoman');
+    if (figureWomanEl) figureWomanEl.style.display = 'none';
+  }
+
   // ---------- scene scale: .scene is built at its native 941x1672px size
   // and scaled as one rigid unit via `transform: scale()`, instead of
   // relying on CSS viewport units (100vh/100dvh/100svh) to resize the box
@@ -675,6 +687,24 @@
     });
   }
 
+  // only used when WOMAN_PRESENT -- replaces the bed's zzz-sleep FX with
+  // this reaction, shared by both the bed hotspot and a direct click on
+  // her, once she's actually there to react.
+  const BED_REST_CAPTION = '야경을 바라보며, 잠시 숨을 돌립니다.';
+  function triggerBedRest() {
+    playSfx('bed');
+    // hold matches the settle animation's 2 reps (1.3s x2 = 2.6s) so the
+    // caption doesn't fade before the motion finishes
+    showCaption(BED_REST_CAPTION, 2800);
+    // only the head/shoulder layer animates -- the body/legs layer stays put
+    const figureHead = document.getElementById('figureWomanHead');
+    if (figureHead) {
+      figureHead.classList.remove('settle');
+      void figureHead.offsetWidth; // restart the animation even on rapid re-clicks
+      figureHead.classList.add('settle');
+    }
+  }
+
   document.querySelectorAll('.hotspot').forEach((btn) => {
     btn.addEventListener('click', () => {
       const target = btn.dataset.target;
@@ -697,6 +727,11 @@
         }
       }
 
+      if (target === 'bed' && WOMAN_PRESENT) {
+        triggerBedRest();
+        return;
+      }
+
       const milestone = HOTSPOT_MILESTONES[target];
       if (milestone) {
         hotspotClickCounts[target] += 1;
@@ -713,6 +748,20 @@
       if (CAPTIONS[target]) showCaption(CAPTIONS[target]);
     });
   });
+
+  // the woman herself is a second click target for the same "sit and
+  // rest" moment as the bed hotspot beneath her (see the #figureWoman
+  // pointer-events override in style.css).
+  const figureWoman = document.getElementById('figureWoman');
+  if (figureWoman && WOMAN_PRESENT) {
+    figureWoman.addEventListener('click', triggerBedRest);
+    figureWoman.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        triggerBedRest();
+      }
+    });
+  }
 
   // ---------- background music: track picker + play/pause toggle ----------
   const bgmAudio = document.getElementById('bgmAudio');

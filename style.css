@@ -403,6 +403,69 @@ html, body {
   filter: brightness(0.3) saturate(0.85);
 }
 
+/* Static figure layer (e.g. the woman sitting on the bed) -- separate
+   transparent PNGs positioned by percentage over the base scene-img,
+   rather than composited into scene.png the way the dog/basket were.
+   Decorative by default (pointer-events:none) so any *other* figure
+   added later still lets hotspot clicks pass through underneath; the
+   woman herself re-enables pointer events just below, since she doubles
+   as a click target for the bed's "sit and rest" moment. */
+.scene-figure {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* the woman is a second, wider click target for the same "sit and rest"
+   moment as the bed hotspot beneath her -- pointer-events is inherited,
+   so re-enabling it here (an ID override) doesn't affect any other
+   .scene-figure element. */
+#figureWoman {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* She's split into two stacked PNGs -- .figure-layer--body (the FULL
+   woman image, assets/woman-full.png, always still) and .figure-layer--head
+   (assets/woman-head.png, head+shoulders only, painted on top and the
+   only part that moves) -- rather than one rigid image, so a click only
+   animates the shoulders-up area, the way the dog's ear-perk FX only
+   touches its ears. Using the whole image as the base (not just a
+   lower-body crop) means the head layer moving can never reveal a gap,
+   no matter how far it shifts -- there's always matching art underneath. */
+.figure-layer {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  display: block;
+  pointer-events: none;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+}
+
+.figure-layer--head {
+  z-index: 1; /* paint over the body layer's matching overlap-band pixels */
+}
+
+/* "settling in" motion played on click, replacing the old zzz sleep-cloud
+   FX: a small, gentle sink-and-resettle (a touch of squash/stretch on
+   top of the vertical dip) on the head layer only -- like a few quiet
+   breaths while looking out at the view, not one big nod and not the
+   whole seated figure shifting. Runs 3 times (a short "breathing" beat)
+   and, since every iteration starts and ends at 0%, loops between
+   repeats with no jump. Not `forwards`, so it always ends back at rest
+   -- toggling the class off/on replays the full 3 reps. */
+@keyframes figure-settle {
+  0%   { transform: translateY(0%)    scale(1, 1); }
+  32%  { transform: translateY(1.0%)  scale(0.994, 1.011); }
+  58%  { transform: translateY(-0.35%) scale(1.004, 0.996); }
+  100% { transform: translateY(0%)    scale(1, 1); }
+}
+.figure-layer--head.settle {
+  animation: figure-settle 1.3s cubic-bezier(0.45, 0, 0.2, 1) 2;
+}
+
 .scene.is-entering .scene-img {
   animation: scene-emerge 6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -762,6 +825,10 @@ html, body {
   height: 21.5%;
   z-index: 1;
   pointer-events: none;
+  /* pivot at the base, not the center -- like a real flame, the root
+     stays put and the tip is what leans/sways, so scale+skew below
+     reads as wavering rather than the whole blob breathing in place */
+  transform-origin: 50% 100%;
   background: radial-gradient(
     circle,
     rgba(255, 180, 95, 0.42) 0%,
@@ -775,16 +842,53 @@ html, body {
   animation: fire-glow-pulse 3.6s ease-in-out infinite;
 }
 
+/* a second, smaller flame tongue offset from the main one, swaying on
+   its own independent timing (different duration + a negative delay so
+   it starts mid-cycle) -- echoes how the click-triggered fx-fire.gif
+   has "여러 갈래의 불꽃이 각자 다른 리듬으로" (README) rather than a
+   single uniform flicker, just far more subtly since this only needs
+   to read as idle ambiance, not the full clip. */
+.fire-glow::after {
+  content: "";
+  position: absolute;
+  left: 28%;
+  top: 6%;
+  width: 62%;
+  height: 62%;
+  transform-origin: 50% 100%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 190, 110, 0.4) 0%,
+    rgba(255, 150, 65, 0.2) 30%,
+    transparent 78%
+  );
+  filter: blur(5px);
+  mix-blend-mode: screen;
+  animation: fire-glow-pulse-b 2.9s ease-in-out infinite;
+  animation-delay: -1.1s;
+}
+
 @keyframes fire-glow-pulse {
-  0%   { opacity: 0.55; transform: scale(1); }
-  28%  { opacity: 0.85; transform: scale(1.07); }
-  50%  { opacity: 0.6;  transform: scale(0.96); }
-  74%  { opacity: 0.92; transform: scale(1.05); }
-  100% { opacity: 0.55; transform: scale(1); }
+  0%   { opacity: 0.55; transform: translate(0%, 0%)     scale(1)    skewX(0deg); }
+  22%  { opacity: 0.82; transform: translate(-3%, -1.5%) scale(1.06) skewX(-2.5deg); }
+  38%  { opacity: 0.68; transform: translate(2%, -1%)    scale(0.98) skewX(1.5deg); }
+  50%  { opacity: 0.6;  transform: translate(-1%, 0.5%)  scale(0.96) skewX(-1deg); }
+  66%  { opacity: 0.9;  transform: translate(2.5%, -2%)  scale(1.06) skewX(2deg); }
+  84%  { opacity: 0.72; transform: translate(-1.5%, -1%) scale(1.0)  skewX(-1.5deg); }
+  100% { opacity: 0.55; transform: translate(0%, 0%)     scale(1)    skewX(0deg); }
+}
+
+@keyframes fire-glow-pulse-b {
+  0%   { opacity: 0.45; transform: translate(0%, 0%)    scale(1)    skewX(0deg); }
+  30%  { opacity: 0.7;  transform: translate(2%, -1.5%)  scale(1.08) skewX(2deg); }
+  55%  { opacity: 0.5;  transform: translate(-2%, -0.5%) scale(0.94) skewX(-1.5deg); }
+  80%  { opacity: 0.75; transform: translate(1.5%, -1.8%) scale(1.05) skewX(1.5deg); }
+  100% { opacity: 0.45; transform: translate(0%, 0%)    scale(1)    skewX(0deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fire-glow { animation: none !important; opacity: 0.65; }
+  .fire-glow,
+  .fire-glow::after { animation: none !important; opacity: 0.65; }
 }
 
 .fire-embers {
